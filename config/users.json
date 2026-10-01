@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "ip": "192.168.56.11",
+      "username": "Contestant_A",
+      "description": "Client VM A - Restricted Contestant"
+    },
+    {
+      "ip": "192.168.56.12",
+      "username": "Contestant_B",
+      "description": "Client VM B - High Security Contestant"
+    },
+    {
+      "ip": "192.168.56.13",
+      "username": "Contestant_C",
+      "description": "Client VM C - Unrestricted Admin/User"
+    },
+    {
+      "ip": "127.0.0.1",
+      "username": "Contestant_A",
+      "description": "Localhost Simulation Mapping A"
+    }
+  ]
+}

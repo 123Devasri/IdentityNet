@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IdentityNet - Admin Gateway Control Dashboard</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="admin-body">
+    <nav class="navbar navbar-admin">
+        <div class="nav-brand">
+            <h2>IDENTITYNET <span>ADMIN CONTROL PLANE</span></h2>
+        </div>
+        <div class="user-status-bar">
+            <span class="status-indicator">● GATEWAY ONLINE</span>
+            <span class="subnet-tag">SUBNET: 192.168.50.0/24</span>
+            <button onclick="refreshDashboard()" class="btn btn-secondary btn-sm">🔄 Refresh</button>
+        </div>
+    </nav>
+
+    <div class="container main-content admin-layout">
+        <!-- Top Status Grid -->
+        <div class="status-grid">
+            <div class="stat-card">
+                <div class="stat-title">Gateway Status</div>
+                <div class="stat-value text-green" id="statGateway">ONLINE</div>
+                <div class="stat-sub">IP: 192.168.50.1</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Active Policy Profile</div>
+                <div class="stat-value" id="statProfile">contest-2026</div>
+                <div class="stat-sub" id="statMode">Mode: Default-Deny</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Online Participants</div>
+                <div class="stat-value text-blue" id="statParticipants">0</div>
+                <div class="stat-sub">Authenticated Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Data Plane Services</div>
+                <div class="stat-value text-purple">ACTIVE</div>
+                <div class="stat-sub">DNS Filter, NAT & Firewall</div>
+            </div>
+        </div>
+
+        <div class="admin-split-view">
+            <!-- Left Side: Connected Participants & Network Events -->
+            <div class="admin-main-panel">
+                <!-- Active Participants Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>👥 Connected Participants</h3>
+                        <span class="badge" id="partBadge">0 Active</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="participantsTable">
+                            <thead>
+                                <tr>
+                                    <th>Participant ID</th>
+                                    <th>Name</th>
+                                    <th>IP Address</th>
+                                    <th>MAC Address</th>
+                                    <th>Status</th>
+                                    <th>Login Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center">Loading participants...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Network Events Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>📡 Live Gateway Network Events</h3>
+                        <button onclick="fetchEvents()" class="btn btn-secondary btn-sm">Clear Feed</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="eventsTable">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Client IP</th>
+                                    <th>User</th>
+                                    <th>Destination</th>
+                                    <th>Action</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center">Monitoring live network traffic...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Policy Editor & Controls -->
+            <div class="admin-side-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🛡️ Allowlist Policy Editor</h3>
+                    </div>
+                    <div class="policy-controls">
+                        <label>Active Profile Preset:</label>
+                        <div class="profile-switcher">
+                            <button onclick="switchProfile('contest-2026')" class="btn btn-sm" id="btnContestProf">Contest 2026</button>
+                            <button onclick="switchProfile('exam-2026')" class="btn btn-sm" id="btnExamProf">Exam 2026</button>
+                        </div>
+
+                        <hr class="divider">
+
+                        <form id="addDomainForm" onsubmit="addDomain(event)" class="add-domain-form">
+                            <label for="newDomain">Add Allowed Domain / Pattern:</label>
+                            <div class="input-group">
+                                <input type="text" id="newDomain" placeholder="e.g. docs.python.org" required>
+                                <button type="submit" class="btn btn-primary btn-sm">+ ADD</button>
+                            </div>
+                        </form>
+
+                        <div class="domain-list-header">
+                            <h4>Current Allowed Destinations:</h4>
+                        </div>
+                        <ul class="domain-list" id="allowedDomainList">
+                            <li class="loading">Loading policy...</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card info-card">
+                    <h4>🔒 Default-Deny Security Note</h4>
+                    <p>IdentityNet Gateway operates on a strict default-deny egress policy. Any domain or IP not explicitly allowed above is automatically dropped at the network layer.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

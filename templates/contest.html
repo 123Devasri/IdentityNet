@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IdentityNet - Contest Workspace</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="dashboard-body">
+    <nav class="navbar">
+        <div class="nav-brand">
+            <h2>IDENTITYNET <span>CONTEST WORKSPACE</span></h2>
+        </div>
+        <div class="user-status-bar">
+            <span class="user-tag">👤 <strong>{{ participant.name }}</strong> ({{ participant.participant_id }})</span>
+            <span class="ip-tag">🌐 IP: {{ participant.ip_address }}</span>
+            <span class="profile-tag">🔒 Policy: {{ profile }}</span>
+            <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        <div class="sidebar">
+            <h3>Problem Set</h3>
+            <ul class="problem-list">
+                {% for q in questions %}
+                <li class="problem-item {% if loop.first %}active{% endif %}" onclick="selectQuestion({{ q.id }}, '{{ q.title }}', '{{ q.description|e }}', '{{ q.sample_input }}', '{{ q.sample_output }}', {{ q.points }})">
+                    <div class="prob-title">{{ q.title }}</div>
+                    <div class="prob-points">{{ q.points }} pts</div>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="network-notice-box">
+                <h4>🌐 Active Network Policy</h4>
+                <p>IdentityNet Gateway enforces a default-deny rule. Only contest server and approved documentation domains (e.g. <code>github.com</code>, <code>docs.python.org</code>) are accessible.</p>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="problem-details-card" id="problemCard">
+                {% if questions %}
+                <div class="prob-header">
+                    <h2 id="qTitle">{{ questions[0].title }}</h2>
+                    <span class="points-badge" id="qPoints">{{ questions[0].points }} Points</span>
+                </div>
+                <div class="prob-desc" id="qDesc">
+                    <p>{{ questions[0].description }}</p>
+                </div>
+                <div class="io-sample-grid">
+                    <div class="io-box">
+                        <label>Sample Input:</label>
+                        <pre id="qInput">{{ questions[0].sample_input }}</pre>
+                    </div>
+                    <div class="io-box">
+                        <label>Sample Output:</label>
+                        <pre id="qOutput">{{ questions[0].sample_output }}</pre>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="submission-card">
+                <h3>Submit Solution</h3>
+                <form id="submissionForm" onsubmit="submitSolution(event)">
+                    <input type="hidden" id="selectedQuestionId" value="{{ questions[0].id if questions else 1 }}">
+                    <div class="form-group">
+                        <label for="code">Python 3 Solution Code:</label>
+                        <textarea id="code" name="code" rows="10" placeholder="# Write Python code here...
+def solve():
+    n = int(input())
+    print(sum(i for i in range(1, n+1) if i % 2 == 0))
+
+solve()" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success" id="submitBtn">SUBMIT CODE</button>
+                </form>
+
+                <div id="submitResult" class="submit-result-box" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/contest.js"></script>
+</body>
+</html>

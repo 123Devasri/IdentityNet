@@ -1,0 +1,37 @@
+{
+  "policies": {
+    "Contestant_A": {
+      "default_action": "BLOCK",
+      "allowed_domains": [
+        "github.com",
+        "*.github.com",
+        "python.org",
+        "*.python.org"
+      ],
+      "blocked_domains": [
+        "youtube.com",
+        "*.youtube.com"
+      ]
+    },
+    "Contestant_B": {
+      "default_action": "BLOCK",
+      "allowed_domains": [
+        "github.com",
+        "*.github.com"
+      ],
+      "blocked_domains": [
+        "youtube.com",
+        "*.youtube.com",
+        "instagram.com",
+        "*.instagram.com"
+      ]
+    },
+    "Contestant_C": {
+      "default_action": "ALLOW",
+      "allowed_domains": [
+        "*"
+      ],
+      "blocked_domains": []
+    }
+  }
+}

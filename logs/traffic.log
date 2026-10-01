@@ -1,0 +1,24 @@
+# IdentityNet Traffic Log
+# Format: Timestamp | User | Source IP | Destination IP | Domain | Protocol | Action | Reason
+==============================================================================================================
+[2026-09-29 13:51:40] [SYSTEM:INFO] Initializing IdentityNet Firewall System...
+[2026-09-29 13:51:40] [SYSTEM:INFO] [DRY-RUN] IPv4 Forwarding enabled.
+[2026-09-29 13:51:40] [SYSTEM:INFO] Loaded user identity map (4 users registered).
+[2026-09-29 13:51:40] [SYSTEM:INFO] Loaded policy rules (3 user policies configured).
+[2026-09-29 13:51:40] [SYSTEM:INFO] Firewall Engine initialized in DRY-RUN mode.
+[2026-09-29 13:51:40] [SYSTEM:WARN] Scapy package is not installed. Live packet capture requires 'scapy'. Run setup.sh first.
+[2026-09-29 13:51:40] [SYSTEM:INFO] IdentityNet Firewall is ACTIVE and monitoring traffic. Press Ctrl+C to stop.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 21:41:16] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 21:41:16] [SYSTEM:INFO] Policy Engine initialized (Profile: 'contest-2026', Default Action: 'DENY', 9 allowed domains).
+[2026-10-01 21:41:16] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 21:41:16] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 21:41:16] [SYSTEM:WARN] FwpmSubLayerAdd0 failed with error: 0x00000005
+[2026-10-01 21:41:16] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 21:41:16] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 21:41:16] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 8000...
+[2026-10-01 21:41:16] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 21:41:16] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 8000.

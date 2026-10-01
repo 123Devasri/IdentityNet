@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IdentityNet - Contest Authentication</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-body">
+    <div class="login-card">
+        <div class="brand-header">
+            <h1>IDENTITYNET</h1>
+            <p class="subtitle">Windows Network Gateway & Policy Server</p>
+        </div>
+        
+        <div class="event-badge">
+            <span class="pulse-icon">●</span> Programming Contest 2026
+        </div>
+
+        <form action="/login" method="POST" class="login-form">
+            <div class="form-group">
+                <label for="participant_id">Participant ID</label>
+                <input type="text" id="participant_id" name="participant_id" placeholder="e.g. P001" required autofocus autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Access Password</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary">AUTHENTICATE SESSION</button>
+        </form>
+
+        <div class="login-footer">
+            <p>Protected by Windows Filtering Platform (WFP) Default-Deny Policy</p>
+            <p class="net-info">Network: IdentityNet Mobile Hotspot | Subnet: 192.168.137.0/24</p>
+        </div>
+    </div>
+</body>
+</html>

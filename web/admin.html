@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IdentityNet - Admin Gateway Dashboard</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body class="admin-body">
+    <nav class="navbar navbar-admin">
+        <div class="nav-brand">
+            <h2>IDENTITYNET <span>WINDOWS C / WFP GATEWAY</span></h2>
+        </div>
+        <div class="user-status-bar">
+            <span class="status-indicator">● GATEWAY ONLINE</span>
+            <span class="subnet-tag">SUBNET: 192.168.137.0/24</span>
+            <button onclick="refreshDashboard()" class="btn btn-secondary btn-sm">🔄 Refresh</button>
+        </div>
+    </nav>
+
+    <div class="container main-content admin-layout">
+        <!-- Top Status Grid -->
+        <div class="status-grid">
+            <div class="stat-card">
+                <div class="stat-title">Gateway Status</div>
+                <div class="stat-value text-green" id="statGateway">ONLINE</div>
+                <div class="stat-sub">IP: 192.168.137.1</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Active Policy Profile</div>
+                <div class="stat-value" id="statProfile">contest-2026</div>
+                <div class="stat-sub" id="statMode">Mode: Default-Deny</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Connected Participants</div>
+                <div class="stat-value text-blue" id="statParticipants">0</div>
+                <div class="stat-sub">Authenticated Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">C & WFP Services</div>
+                <div class="stat-value text-purple">ACTIVE</div>
+                <div class="stat-sub">C DNS Server & WFP Filter</div>
+            </div>
+        </div>
+
+        <div class="admin-split-view">
+            <!-- Left Side: Connected Participants -->
+            <div class="admin-main-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>👥 Connected Hotspot Participants</h3>
+                        <span class="badge" id="partBadge">0 Active</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="participantsTable">
+                            <thead>
+                                <tr>
+                                    <th>Participant ID</th>
+                                    <th>Name</th>
+                                    <th>IP Address</th>
+                                    <th>MAC Address</th>
+                                    <th>Status</th>
+                                    <th>Login Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center">Loading participants...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🛡️ Windows Allowlist Policy Editor</h3>
+                    </div>
+                    <div class="policy-controls">
+                        <div class="domain-list-header">
+                            <h4>Current Allowed Destinations:</h4>
+                        </div>
+                        <ul class="domain-list" id="allowedDomainList">
+                            <li class="loading">Loading policy...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Info Card & Architecture -->
+            <div class="admin-side-panel">
+                <div class="card info-card">
+                    <h4>🛡️ Windows Filtering Platform (WFP)</h4>
+                    <p>IdentityNet Gateway operates on a strict default-deny policy using Winsock2 C sockets and WFP API filtering (<code>fwpapi.h</code>). Any domain or IP not explicitly allowed above is automatically dropped.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/admin.js"></script>
+</body>
+</html>
