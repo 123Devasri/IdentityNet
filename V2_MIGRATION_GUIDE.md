@@ -14,7 +14,7 @@ python -m venv .venv
 python -m pip install -r requirements.txt
 ```
 
-Install Npcap with WinPcap compatibility if live packet capture is required. Run the gateway with Administrator privileges because packet capture and Windows Firewall rule changes may require elevation.
+Install Npcap with WinPcap compatibility if live packet capture is required. Install the WinDivert driver separately from the official WinDivert distribution. Run the gateway with Administrator privileges because packet capture and WinDivert require elevation.
 
 ## 2. Preserve the V1 policy
 
@@ -58,9 +58,30 @@ Check:
 - Existing allowed and blocked domain behavior.
 - DNS resolutions for application domains.
 - TLS SNI events in the application-event API.
-- Windows Firewall rules beginning with `IdentityNet-V2-`.
+- The WinDivert active-startup message.
 - Application events at `/api/admin/application-events`.
+
+On Windows, the successful startup message must include:
+
+```text
+[Firewall Enforcer] WinDivert packet-drop enforcement ACTIVE.
+```
+
+If WinDivert cannot open, startup fails rather than falling back to log-only detection. This prevents an operator from accidentally running an apparently protected but unenforced gateway.
+
+## 6. Enforcement validation
+
+1. Connect an Android or iPhone to the Windows Mobile Hotspot.
+2. Confirm the device receives an address in `192.168.137.0/24`.
+3. Start IdentityNet with `--enable-app-filtering` and confirm the WinDivert active message.
+4. Open WhatsApp, Instagram, Telegram, Discord, Spotify, or YouTube on the participant device.
+5. Query `/api/admin/application-events` and confirm entries contain the participant IP, application, `TLS_SNI` or `DNS_IP_CACHE`, and `DROPPED`.
+6. Confirm the application cannot send or receive new content after the drop event.
+7. Open an allowed educational/development site such as GitHub. Its packets should be reinjected and the site should remain usable.
+8. Repeat after removing the application from `blocked_apps` or its category from `blocked_categories`; restart the gateway and confirm the application is no longer dropped.
+
+The decisive result is `DROPPED` for packets, not merely `BLOCKED` for a DNS decision. A DNS block proves classification; a WinDivert drop proves the packet was not forwarded.
 
 ## Detection limitations
 
-V2 does not decrypt HTTPS and does not install software on participants. SNI is unavailable when encrypted ClientHello is used. DNS-IP correlation can be ambiguous for shared CDNs. Applications using QUIC, hard-coded IP addresses, alternate DNS transports, or unrecognized domains require additional policy controls. V2 should therefore be deployed with controlled DNS, forwarding enforcement, and explicit testing of the services relevant to the contest.
+V2 does not decrypt HTTPS and does not install software on participants. SNI is unavailable when encrypted ClientHello is used. DNS-IP correlation can be ambiguous for shared CDNs. Applications using QUIC, hard-coded IP addresses, alternate DNS transports, or unrecognized domains require additional policy controls. V2 should therefore be deployed with controlled DNS, WinDivert packet enforcement, and explicit testing of the services relevant to the contest.

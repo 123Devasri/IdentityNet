@@ -153,7 +153,7 @@ The V2 pipeline is:
 DNS query/response -> signature match -> DNS-IP cache
 TLS ClientHello SNI -> signature match -> policy decision
 Encrypted packet -> cached destination IP -> policy decision
-Blocked decision -> Windows Firewall rule or Linux firewall rule
+Blocked decision -> WinDivert packet drop (Windows) or Linux firewall rule
 ```
 
 No participant software, browser extension, TLS decryption, or MITM certificate is used. TLS SNI is inspected only when it is visible in the ClientHello. DNS-IP correlation is used after encryption begins.
@@ -167,11 +167,13 @@ Application signatures are stored in [config/application_signatures.json](config
 }
 ```
 
-To enable Python packet inspection on Windows, install Npcap, install the Python requirements, run PowerShell as Administrator, and start the gateway with:
+On Windows, V2 enforcement uses WinDivert at the network layer. Install the WinDivert driver, install Npcap for the existing Scapy observation path, install the Python requirements, run PowerShell as Administrator, and start the gateway with:
 
 ```powershell
 python src\main.py --gateway-ip 192.168.137.1 --subnet 192.168.137.0/24 --port 8080 --enable-app-filtering --capture-interface "Wi-Fi"
 ```
+
+When this mode is enabled on Windows, the gateway fails to start if `pydivert` or the WinDivert driver cannot be opened. A blocked packet is received by WinDivert and is intentionally not reinjected; an allowed packet is reinjected unchanged.
 
 The V2 modules are:
 
@@ -184,4 +186,4 @@ The V2 modules are:
 
 Application events are stored in SQLite and exposed through `/api/admin/application-events`. Detection includes the method (`DNS_QUERY`, `DNS_RESPONSE`, `TLS_SNI`, or `DNS_IP_CACHE`), participant IP, application, category, and action.
 
-V2 is a network metadata filter, not a universal application identification system. QUIC-only traffic, encrypted ClientHello/SNI, DNS-over-HTTPS, DNS-over-TLS, hard-coded IPs without a DNS observation, CDNs shared by multiple services, and rapidly changing service domains can reduce classification accuracy. Preventing those bypasses requires additional gateway controls such as QUIC blocking, controlled DNS redirection, and a complete Windows forwarding/WFP enforcement layer.
+V2 is a network metadata filter, not a universal application identification system. QUIC-only traffic, encrypted ClientHello/SNI, DNS-over-HTTPS, DNS-over-TLS, hard-coded IPs without a DNS observation, CDNs shared by multiple services, and rapidly changing service domains can reduce classification accuracy. WinDivert provides real packet dropping for traffic that is classified, but it cannot classify traffic whose application identity is not visible through the configured signals.
