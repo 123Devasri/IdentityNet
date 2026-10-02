@@ -10,4 +10,4 @@ echo =====================================================================
 set PORT=8080
 if not "%~1"=="" set PORT=%~1
 
-python src/main.py --port %PORT%
+python src\main.py --dry-run --gateway-ip 127.0.0.1 --port %PORT%

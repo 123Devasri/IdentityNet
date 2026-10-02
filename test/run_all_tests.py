@@ -19,17 +19,13 @@ def run_suite():
 =============================================================================
 """)
 
-    config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config"))
-    engine = PolicyEngine(
-        users_config_path=os.path.join(config_dir, "users.json"),
-        policies_config_path=os.path.join(config_dir, "policies.json")
-    )
+    engine = PolicyEngine()
 
     test_scenarios = [
-        {"id": 1, "user": "Contestant_A", "ip": "192.168.56.11", "domain": "github.com", "expected": "ALLOW"},
-        {"id": 2, "user": "Contestant_A", "ip": "192.168.56.11", "domain": "youtube.com", "expected": "BLOCK"},
-        {"id": 3, "user": "Contestant_B", "ip": "192.168.56.12", "domain": "instagram.com", "expected": "BLOCK"},
-        {"id": 4, "user": "Contestant_C", "ip": "192.168.56.13", "domain": "youtube.com", "expected": "ALLOW"},
+        {"id": 1, "user": "Contestant_A", "ip": "192.168.56.11", "domain": "github.com", "expected": "ALLOWED"},
+        {"id": 2, "user": "Contestant_A", "ip": "192.168.56.11", "domain": "youtube.com", "expected": "BLOCKED"},
+        {"id": 3, "user": "Contestant_B", "ip": "192.168.56.12", "domain": "instagram.com", "expected": "BLOCKED"},
+        {"id": 4, "user": "Contestant_C", "ip": "192.168.56.13", "domain": "youtube.com", "expected": "BLOCKED"},
     ]
 
     all_passed = True
@@ -37,7 +33,7 @@ def run_suite():
     print("-" * 90)
 
     for tc in test_scenarios:
-        user_identity, action, reason = engine.evaluate(tc["ip"], tc["domain"])
+        action, reason = engine.evaluate(tc["domain"], tc["ip"])
         passed = (action == tc["expected"])
         if not passed:
             all_passed = False

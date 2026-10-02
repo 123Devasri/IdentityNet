@@ -140,3 +140,48 @@ build.bat
 ```cmd
 bin\IdentityNet.exe 80
 ```
+
+---
+
+## V2 Application-Aware Filtering
+
+Version 2 preserves the DNS allowlist and adds gateway-side application classification for WhatsApp, Telegram, Discord, Instagram, Facebook, Messenger, Snapchat, Spotify, YouTube, and X/Twitter.
+
+The V2 pipeline is:
+
+```text
+DNS query/response -> signature match -> DNS-IP cache
+TLS ClientHello SNI -> signature match -> policy decision
+Encrypted packet -> cached destination IP -> policy decision
+Blocked decision -> Windows Firewall rule or Linux firewall rule
+```
+
+No participant software, browser extension, TLS decryption, or MITM certificate is used. TLS SNI is inspected only when it is visible in the ClientHello. DNS-IP correlation is used after encryption begins.
+
+Application signatures are stored in [config/application_signatures.json](config/application_signatures.json). Application policy is stored alongside the existing domain policy in [config/policy.json](config/policy.json):
+
+```json
+{
+  "blocked_categories": ["Messaging", "SocialMedia", "Streaming"],
+  "blocked_apps": []
+}
+```
+
+To enable Python packet inspection on Windows, install Npcap, install the Python requirements, run PowerShell as Administrator, and start the gateway with:
+
+```powershell
+python src\main.py --gateway-ip 192.168.137.1 --subnet 192.168.137.0/24 --port 8080 --enable-app-filtering --capture-interface "Wi-Fi"
+```
+
+The V2 modules are:
+
+- `src/app_classifier.py`: combines DNS, TLS SNI, and cached-IP evidence.
+- `src/tls_sni_inspector.py`: parses TLS ClientHello SNI without decrypting TLS.
+- `src/dns_cache.py`: stores domain-to-IP-to-application relationships with expiry.
+- `src/signature_engine.py`: loads wildcard application signatures.
+- `src/firewall_enforcer.py`: applies immediate platform-specific destination blocks.
+- `src/policy_engine.py`: evaluates blocked applications and categories.
+
+Application events are stored in SQLite and exposed through `/api/admin/application-events`. Detection includes the method (`DNS_QUERY`, `DNS_RESPONSE`, `TLS_SNI`, or `DNS_IP_CACHE`), participant IP, application, category, and action.
+
+V2 is a network metadata filter, not a universal application identification system. QUIC-only traffic, encrypted ClientHello/SNI, DNS-over-HTTPS, DNS-over-TLS, hard-coded IPs without a DNS observation, CDNs shared by multiple services, and rapidly changing service domains can reduce classification accuracy. Preventing those bypasses requires additional gateway controls such as QUIC blocking, controlled DNS redirection, and a complete Windows forwarding/WFP enforcement layer.

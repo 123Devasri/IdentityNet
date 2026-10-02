@@ -12,6 +12,19 @@
 
 static NetworkTopology g_topology;
 
+static void set_project_working_directory(void) {
+    char executable_path[MAX_PATH];
+    DWORD length = GetModuleFileNameA(NULL, executable_path, sizeof(executable_path));
+    if (length == 0 || length >= sizeof(executable_path)) return;
+    executable_path[length] = '\0';
+    char *last_separator = strrchr(executable_path, '\\');
+    if (!last_separator) return;
+    *last_separator = '\0';
+    last_separator = strrchr(executable_path, '\\');
+    if (last_separator) *last_separator = '\0';
+    SetCurrentDirectoryA(executable_path);
+}
+
 void print_banner(void) {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(hConsole, FOREGROUND_BLUE | FOREGROUND_INTENSITY);
@@ -53,6 +66,7 @@ int main(int argc, char *argv[]) {
     }
 
     SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
+    set_project_working_directory();
     print_banner();
 
     // 1. Initialize Network Discovery
@@ -75,6 +89,7 @@ int main(int argc, char *argv[]) {
     logger_system("INFO", "Initializing Windows Filtering Platform (WFP) Firewall Engine...");
     if (wfp_init()) {
         wfp_add_anti_bypass_dns_filter(g_topology.hotspot_subnet);
+        wfp_add_allow_destination_ip("8.8.8.8");
     } else {
         logger_system("WARN", "Running in User-Mode DNS Filter mode. (For full WFP kernel filtering, run executable as Administrator).");
     }
