@@ -15,8 +15,11 @@ class RouterManager:
 
     def enable_routing_and_nat(self):
         """Enable IPv4 forwarding and NAT masquerade."""
-        if self.dry_run:
-            print("[Router Manager] Operating in DRY-RUN mode. Kernel forwarding skipped.", flush=True)
+        if self.dry_run or os.name == "nt":
+            if os.name == "nt" and not self.dry_run:
+                print("[Router Manager] Windows Mobile Hotspot/ICS must provide routing and NAT.", flush=True)
+            else:
+                print("[Router Manager] Operating in DRY-RUN mode. Kernel forwarding skipped.", flush=True)
             return
 
         # 1. IPv4 Forwarding
@@ -47,7 +50,7 @@ class RouterManager:
 
     def cleanup(self):
         """Restore original forwarding state."""
-        if self.dry_run:
+        if self.dry_run or os.name == "nt":
             return
         try:
             if os.path.exists("/proc/sys/net/ipv4/ip_forward"):

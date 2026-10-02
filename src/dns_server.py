@@ -4,6 +4,9 @@ import time
 import struct
 from typing import Dict, Optional, Callable, List
 
+from app_classifier import ApplicationClassifier
+from dns_cache import DNSCache
+
 class DNSFilterServer:
     """
     IdentityNet DNS Resolver & Policy Filter Server.
@@ -18,7 +21,9 @@ class DNSFilterServer:
                  host: str = "0.0.0.0",
                  port: int = 53,
                  gateway_ip: str = "192.168.50.1",
-                 upstream_dns: str = "8.8.8.8"):
+                 upstream_dns: str = "8.8.8.8",
+                 application_classifier: Optional[ApplicationClassifier] = None,
+                 dns_cache: Optional[DNSCache] = None):
         self.policy_engine = policy_engine
         self.firewall_manager = firewall_manager
         self.db_manager = db_manager
@@ -26,6 +31,8 @@ class DNSFilterServer:
         self.port = port
         self.gateway_ip = gateway_ip
         self.upstream_dns = upstream_dns
+        self.application_classifier = application_classifier
+        self.dns_cache = dns_cache
 
         self.running = False
         self.sock: Optional[socket.socket] = None
@@ -77,6 +84,16 @@ class DNSFilterServer:
 
             # Evaluate Policy
             action, reason = self.policy_engine.evaluate(domain, client_ip)
+            application_match = self.application_classifier.classify_domain(domain, "DNS_QUERY") if self.application_classifier else None
+            if application_match:
+                app_action, app_reason = self.policy_engine.evaluate_application(
+                    application_match.application, application_match.category, client_ip
+                )
+                if app_action == "BLOCKED":
+                    response = self._build_dns_response(data, "0.0.0.0")
+                    self.sock.sendto(response, client_addr)
+                    self._log_application(client_ip, application_match, "BLOCKED")
+                    return
 
             # Local Gateway Domains
             if domain in ["contest.identitynet.local", "exam.identitynet.local"]:
@@ -91,10 +108,19 @@ class DNSFilterServer:
                 if upstream_response:
                     # Dynamically allow resolved destination IPs in Firewall Manager
                     for ip in resolved_ips:
+                        if self.dns_cache:
+                            self.dns_cache.put(
+                                domain,
+                                ip,
+                                application_match.application if application_match else None,
+                                application_match.category if application_match else None,
+                            )
                         self.firewall_manager.allow_destination_ip(client_ip, ip, domain)
                     
                     self.sock.sendto(upstream_response, client_addr)
                     self.db_manager.log_network_event(client_ip, domain, "ALLOWED", f"Resolved to {resolved_ips}")
+                    if application_match:
+                        self._log_application(client_ip, application_match, "ALLOWED")
                 else:
                     # Fallback to gateway IP if upstream fails
                     response = self._build_dns_response(data, "0.0.0.0")
@@ -108,6 +134,12 @@ class DNSFilterServer:
 
         except Exception as e:
             pass
+
+    def _log_application(self, client_ip: str, match, action: str) -> None:
+        if hasattr(self.db_manager, "log_application_event"):
+            self.db_manager.log_application_event(
+                client_ip, match.application, match.category, match.detection_method, action
+            )
 
     def _parse_dns_query(self, data: bytes) -> tuple:
         """Extract requested domain name and record type from raw DNS header."""
@@ -154,7 +186,7 @@ class DNSFilterServer:
             rdata = socket.inet_aton(ip_address)
 
             answer_section = name_ptr + type_a + class_in + ttl + rdlength + rdata
-            return transaction_id + flags + qcount_ans(query_data) + answer_section
+            return transaction_id + flags + qcount_ans(query_data) + question_section + answer_section
         except Exception:
             return query_data
 

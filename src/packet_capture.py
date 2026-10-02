@@ -1,6 +1,6 @@
 import threading
 import time
-from typing import Optional
+from typing import Any, Optional
 
 try:
     from scapy.all import sniff, AsyncSniffer

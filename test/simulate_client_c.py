@@ -32,22 +32,18 @@ def run_simulation(send_raw_packets=False):
     print(f" Simulating Traffic for {CLIENT_NAME} ({CLIENT_IP})")
     print(f"==================================================")
 
-    config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config"))
-    engine = PolicyEngine(
-        users_config_path=os.path.join(config_dir, "users.json"),
-        policies_config_path=os.path.join(config_dir, "policies.json")
-    )
+    engine = PolicyEngine()
 
     test_domains = [
-        ("youtube.com", "ALLOW"),
-        ("github.com", "ALLOW"),
-        ("google.com", "ALLOW")
+        ("youtube.com", "BLOCKED"),
+        ("github.com", "ALLOWED"),
+        ("google.com", "BLOCKED")
     ]
 
     passed_count = 0
 
     for domain, expected in test_domains:
-        user, action, reason = engine.evaluate(CLIENT_IP, domain)
+        action, reason = engine.evaluate(domain, CLIENT_IP)
         status = "PASSED" if action == expected else "FAILED"
         if status == "PASSED":
             passed_count += 1

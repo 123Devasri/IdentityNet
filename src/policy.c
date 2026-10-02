@@ -9,6 +9,45 @@ static int g_cache_count = 0;
 static CRITICAL_SECTION g_cache_lock;
 static BOOL g_policy_initialized = FALSE;
 
+static int load_allowed_domains_from_file(const char *config_filepath) {
+    if (!config_filepath) return 0;
+    FILE *file = fopen(config_filepath, "rb");
+    if (!file) return 0;
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    if (size <= 0 || size > 1024 * 1024) { fclose(file); return 0; }
+
+    char *content = (char *)malloc((size_t)size + 1);
+    if (!content) { fclose(file); return 0; }
+    fread(content, 1, (size_t)size, file);
+    content[size] = '\0';
+    fclose(file);
+
+    char *cursor = strstr(content, "\"allowed\"");
+    if (!cursor) { free(content); return 0; }
+    cursor = strchr(cursor, '[');
+    if (!cursor) { free(content); return 0; }
+    char *end_array = strchr(cursor, ']');
+    if (!end_array) { free(content); return 0; }
+
+    int loaded = 0;
+    while (cursor < end_array && (cursor = strchr(cursor, '"')) != NULL && cursor < end_array && g_policy.allowed_count < MAX_ALLOWED_DOMAINS) {
+        char *end = strchr(cursor + 1, '"');
+        if (!end) break;
+        size_t length = (size_t)(end - cursor - 1);
+        if (length > 0 && length < MAX_DOMAIN_LEN) {
+            strncpy(g_policy.allowed_domains[g_policy.allowed_count], cursor + 1, length);
+            g_policy.allowed_domains[g_policy.allowed_count][length] = '\0';
+            g_policy.allowed_count++;
+            loaded++;
+        }
+        cursor = end + 1;
+    }
+    free(content);
+    return loaded;
+}
+
 // Helper fnmatch / pattern matcher for domains (*.github.com, github.com)
 static BOOL match_domain_pattern(const char *domain, const char *pattern) {
     char d[MAX_DOMAIN_LEN], p[MAX_DOMAIN_LEN];
@@ -50,7 +89,15 @@ BOOL policy_init(const char *config_filepath) {
     
     g_policy.allowed_count = 0;
 
-    // Load default contest allowlist
+    // Load the configured profile; use the contest defaults only if unavailable.
+    int loaded = load_allowed_domains_from_file(config_filepath);
+    if (loaded > 0) {
+        LeaveCriticalSection(&g_policy.lock);
+        g_policy_initialized = TRUE;
+        logger_system("INFO", "Policy Engine loaded %d domains from '%s'.", loaded, config_filepath);
+        return TRUE;
+    }
+
     const char *defaults[] = {
         "contest.identitynet.local",
         "exam.identitynet.local",

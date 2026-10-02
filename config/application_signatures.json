@@ -1,0 +1,54 @@
+{
+  "applications": [
+    {
+      "name": "WhatsApp",
+      "category": "Messaging",
+      "domains": ["whatsapp.com", "*.whatsapp.com", "whatsapp.net", "*.whatsapp.net"]
+    },
+    {
+      "name": "Telegram",
+      "category": "Messaging",
+      "domains": ["telegram.org", "*.telegram.org", "t.me"]
+    },
+    {
+      "name": "Discord",
+      "category": "Messaging",
+      "domains": ["discord.com", "*.discord.com", "discordapp.com", "*.discordapp.com"]
+    },
+    {
+      "name": "Instagram",
+      "category": "SocialMedia",
+      "domains": ["instagram.com", "*.instagram.com"]
+    },
+    {
+      "name": "Facebook",
+      "category": "SocialMedia",
+      "domains": ["facebook.com", "*.facebook.com", "fbcdn.net", "*.fbcdn.net"]
+    },
+    {
+      "name": "Messenger",
+      "category": "Messaging",
+      "domains": ["messenger.com", "*.messenger.com"]
+    },
+    {
+      "name": "Snapchat",
+      "category": "SocialMedia",
+      "domains": ["snapchat.com", "*.snapchat.com", "snap.com", "*.snap.com"]
+    },
+    {
+      "name": "Spotify",
+      "category": "Streaming",
+      "domains": ["spotify.com", "*.spotify.com", "scdn.co", "*.scdn.co"]
+    },
+    {
+      "name": "YouTube",
+      "category": "Streaming",
+      "domains": ["youtube.com", "*.youtube.com", "googlevideo.com", "*.googlevideo.com", "ytimg.com", "*.ytimg.com"]
+    },
+    {
+      "name": "X",
+      "category": "SocialMedia",
+      "domains": ["x.com", "*.x.com", "twitter.com", "*.twitter.com"]
+    }
+  ]
+}

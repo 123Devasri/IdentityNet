@@ -1,6 +1,7 @@
 import subprocess
 import shutil
 import threading
+import os
 from typing import Set, Tuple, Optional
 
 class FirewallManager:
@@ -21,10 +22,11 @@ class FirewallManager:
 
         self.backend = self._detect_backend()
         self.permitted_ips: Set[str] = set()
+        self.blocked_ips: Set[Tuple[str, str]] = set()
         self.lock = threading.Lock()
 
     def _detect_backend(self) -> str:
-        if self.dry_run:
+        if self.dry_run or os.name == "nt":
             return "dry_run"
         if shutil.which("nft"):
             return "nftables"
@@ -35,7 +37,8 @@ class FirewallManager:
     def initialize(self):
         """Configure Firewall Rules: Anti-Bypass DNS Redirect & Default-Deny Policy."""
         if self.backend == "dry_run":
-            print("[Firewall Manager] Operating in DRY-RUN mode.", flush=True)
+            reason = "Windows native firewall integration is not implemented" if os.name == "nt" and not self.dry_run else "dry-run requested"
+            print(f"[Firewall Manager] Operating without rule changes ({reason}).", flush=True)
             return
 
         with self.lock:
@@ -105,6 +108,20 @@ class FirewallManager:
 
             print(f"[Firewall Manager] Dynamically PERMITTED destination IP '{dst_ip}' (Domain: '{domain}').", flush=True)
 
+    def block_destination_ip(self, client_ip: str, dst_ip: str, application: str = "") -> bool:
+        """Block a client-to-destination pair for application enforcement."""
+        rule_key = (client_ip, dst_ip)
+        with self.lock:
+            if rule_key in self.blocked_ips:
+                return True
+            self.blocked_ips.add(rule_key)
+            if self.backend == "nftables":
+                self._run(["nft", "insert", "rule", "inet", "identitynet", "forward", "ip", "saddr", client_ip, "ip", "daddr", dst_ip, "drop"])
+            elif self.backend == "iptables":
+                self._run(["iptables", "-I", "IDENTITYNET_FORWARD", "1", "-s", client_ip, "-d", dst_ip, "-j", "DROP"])
+        print(f"[Firewall Manager] Dynamically BLOCKED '{client_ip}' -> '{dst_ip}' ({application}).", flush=True)
+        return True
+
     def flush_rules(self):
         """Flush all IdentityNet firewall rules cleanly."""
         if self.backend == "dry_run":
@@ -122,6 +139,7 @@ class FirewallManager:
                 self._run(["iptables", "-X", "IDENTITYNET_FORWARD"], check=False)
 
             self.permitted_ips.clear()
+            self.blocked_ips.clear()
             print("[Firewall Manager] Cleanly flushed all firewall rules.", flush=True)
 
     def _run(self, cmd_list: list, check: bool = True):
