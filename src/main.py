@@ -100,6 +100,9 @@ def main():
     firewall_enforcer = FirewallEnforcer(
         firewall_manager=firewall_manager,
         dry_run=args.dry_run,
+        classifier=application_classifier,
+        policy_engine=policy_engine,
+        db_manager=db_manager,
     )
 
     # 4. Initialize Router Manager
@@ -151,7 +154,17 @@ def main():
 
     packet_capturer.packet_handler = process_application_packet
     if args.enable_app_filtering:
-        packet_capturer.start()
+        try:
+            if os.name == "nt" and not args.dry_run:
+                firewall_enforcer.start_packet_filter()
+            else:
+                packet_capturer.start()
+        except RuntimeError:
+            dns_server.stop()
+            firewall_enforcer.flush()
+            firewall_manager.flush_rules()
+            router_manager.cleanup()
+            raise
 
     # Inject global manager dependencies into FastAPI app module
     server_module.db_manager = db_manager
