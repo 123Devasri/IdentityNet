@@ -37,16 +37,23 @@ class SignatureEngine:
         return domain.strip().lower().rstrip(".")
 
     def match(self, domain: str) -> Optional[ApplicationSignature]:
+        matches = self.match_all(domain)
+        return matches[0] if matches else None
+
+    def match_all(self, domain: str) -> List[ApplicationSignature]:
         domain = self._clean_domain(domain)
         if not domain:
-            return None
+            return []
+        matches = []
         for signature in self.signatures:
             for pattern in signature.domains:
                 if pattern == "*" or fnmatch.fnmatch(domain, pattern):
-                    return signature
+                    matches.append(signature)
+                    break
                 if pattern.startswith("*.") and domain.endswith(pattern[1:]):
-                    return signature
-        return None
+                    matches.append(signature)
+                    break
+        return matches
 
     def reload(self) -> None:
         self.signatures = self._load()
