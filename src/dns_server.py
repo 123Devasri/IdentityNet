@@ -84,16 +84,20 @@ class DNSFilterServer:
 
             # Evaluate Policy
             action, reason = self.policy_engine.evaluate(domain, client_ip)
-            application_match = self.application_classifier.classify_domain(domain, "DNS_QUERY") if self.application_classifier else None
-            if application_match:
+            application_matches = self.application_classifier.classify_domain_candidates(domain, "DNS_QUERY") if self.application_classifier else []
+            blocked_application = None
+            for application_match in application_matches:
                 app_action, app_reason = self.policy_engine.evaluate_application(
                     application_match.application, application_match.category, client_ip
                 )
                 if app_action == "BLOCKED":
-                    response = self._build_dns_response(data, "0.0.0.0")
-                    self.sock.sendto(response, client_addr)
-                    self._log_application(client_ip, application_match, "BLOCKED")
-                    return
+                    blocked_application = application_match
+                    break
+            if blocked_application:
+                response = self._build_dns_response(data, "0.0.0.0")
+                self.sock.sendto(response, client_addr)
+                self._log_application(client_ip, blocked_application, "BLOCKED")
+                return
 
             # Local Gateway Domains
             if domain in ["contest.identitynet.local", "exam.identitynet.local"]:
@@ -109,17 +113,16 @@ class DNSFilterServer:
                     # Dynamically allow resolved destination IPs in Firewall Manager
                     for ip in resolved_ips:
                         if self.dns_cache:
-                            self.dns_cache.put(
-                                domain,
-                                ip,
-                                application_match.application if application_match else None,
-                                application_match.category if application_match else None,
-                            )
+                            if application_matches:
+                                for application_match in application_matches:
+                                    self.dns_cache.put(domain, ip, application_match.application, application_match.category)
+                            else:
+                                self.dns_cache.put(domain, ip)
                         self.firewall_manager.allow_destination_ip(client_ip, ip, domain)
                     
                     self.sock.sendto(upstream_response, client_addr)
                     self.db_manager.log_network_event(client_ip, domain, "ALLOWED", f"Resolved to {resolved_ips}")
-                    if application_match:
+                    for application_match in application_matches:
                         self._log_application(client_ip, application_match, "ALLOWED")
                 else:
                     # Fallback to gateway IP if upstream fails

@@ -3,7 +3,7 @@
     {
       "name": "WhatsApp",
       "category": "Messaging",
-      "domains": ["whatsapp.com", "*.whatsapp.com", "whatsapp.net", "*.whatsapp.net"]
+      "domains": ["whatsapp.com", "*.whatsapp.com", "whatsapp.net", "*.whatsapp.net", "fbsbx.com", "*.fbsbx.com"]
     },
     {
       "name": "Telegram",
@@ -18,12 +18,12 @@
     {
       "name": "Instagram",
       "category": "SocialMedia",
-      "domains": ["instagram.com", "*.instagram.com"]
+      "domains": ["instagram.com", "*.instagram.com", "cdninstagram.com", "*.cdninstagram.com"]
     },
     {
       "name": "Facebook",
       "category": "SocialMedia",
-      "domains": ["facebook.com", "*.facebook.com", "fbcdn.net", "*.fbcdn.net"]
+      "domains": ["facebook.com", "*.facebook.com", "fbcdn.net", "*.fbcdn.net", "fbsbx.com", "*.fbsbx.com", "edge-mqtt.facebook.com", "*.edge-mqtt.facebook.com"]
     },
     {
       "name": "Messenger",

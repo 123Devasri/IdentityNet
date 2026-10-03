@@ -103,6 +103,8 @@ def main():
         classifier=application_classifier,
         policy_engine=policy_engine,
         db_manager=db_manager,
+        gateway_ip=args.gateway_ip,
+        hotspot_subnet=args.subnet,
     )
 
     # 4. Initialize Router Manager
