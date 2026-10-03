@@ -45,8 +45,9 @@ class FirewallEnforcer:
         if not self.classifier or not self.policy_engine or not self.db_manager:
             raise RuntimeError("WinDivert enforcement requires classifier, policy, and database dependencies")
 
-        # Inspect all outbound IP traffic except DNS, which is handled by the existing DNS path.
-        self._divert = pydivert.WinDivert("outbound and ip and !(tcp.DstPort == 53 or udp.DstPort == 53)")
+        # Use the minimal WinDivert expression supported by the installed driver.
+        # Classification still decides which captured packets are reinjected or dropped.
+        self._divert = pydivert.WinDivert("outbound")
         try:
             self._divert.open()
         except Exception as exc:
