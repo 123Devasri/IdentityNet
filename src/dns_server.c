@@ -2,6 +2,7 @@
 #include "policy.h"
 #include "clients.h"
 #include "logger.h"
+#include "../wfp/wfp_manager.h"
 #include <string.h>
 
 static SOCKET g_dns_sock = INVALID_SOCKET;
@@ -156,6 +157,7 @@ static DWORD WINAPI dns_thread_proc(LPVOID lpParam) {
                 if (resp_len > 0) {
                     if (resolved_ip[0] != '\0') {
                         policy_cache_ip(domain, resolved_ip, 300);
+                        wfp_add_allow_destination_ip(resolved_ip);
                     }
                     sendto(g_dns_sock, (const char *)resp_buf, resp_len, 0, (struct sockaddr *)&client_addr, client_addr_len);
                     logger_log_traffic(user_display, client_ip, domain, "DNS:53", "ALLOW", reason);

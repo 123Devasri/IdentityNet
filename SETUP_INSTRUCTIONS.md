@@ -33,7 +33,19 @@ This compiles all C modules into `bin\IdentityNet.exe`.
 
 ## ⚡ Step 3: Launching IdentityNet Gateway Server
 
-Open **Command Prompt as Administrator** and launch:
+For a local Python control-plane test, create a virtual environment, install `requirements.txt`, set an administrator password, and run:
+
+```cmd
+py -m venv .venv
+.venv\Scripts\activate
+python -m pip install -r requirements.txt
+set IDENTITYNET_ADMIN_PASSWORD=choose-a-strong-password
+python src\main.py --dry-run --gateway-ip 127.0.0.1 --port 8080
+```
+
+Use `http://127.0.0.1:8080/login` for the participant UI. The admin UI uses HTTP Basic authentication with username `admin` and the password in `IDENTITYNET_ADMIN_PASSWORD`.
+
+For the native Windows gateway, which uses Mobile Hotspot and WFP, open **Command Prompt as Administrator** and launch:
 
 ```cmd
 bin\IdentityNet.exe 80

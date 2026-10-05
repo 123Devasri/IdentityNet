@@ -22,3 +22,168 @@
 [2026-10-01 21:41:16] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 8000...
 [2026-10-01 21:41:16] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
 [2026-10-01 21:41:16] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 8000.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 22:45:58] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 22:45:58] [SYSTEM:INFO] Policy Engine initialized (Profile: 'contest-2026', Default Action: 'DENY', 9 allowed domains).
+[2026-10-01 22:45:58] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 22:45:58] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 22:45:58] [SYSTEM:WARN] FwpmSubLayerAdd0 failed with error: 0x00000005
+[2026-10-01 22:45:58] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 22:45:58] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 22:45:58] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 22:45:58] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 22:45:58] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+[2026-10-01 22:48:50] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 22:48:50] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 22:48:50] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 22:48:50] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 22:48:50] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 22:50:37] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 22:50:37] [SYSTEM:INFO] Policy Engine initialized (Profile: 'contest-2026', Default Action: 'DENY', 9 allowed domains).
+[2026-10-01 22:50:37] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 22:50:37] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 22:50:37] [SYSTEM:WARN] FwpmSubLayerAdd0 failed with error: 0x00000005
+[2026-10-01 22:50:37] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 22:50:37] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 22:50:37] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 22:50:37] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 22:50:37] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:03:37] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 23:03:37] [SYSTEM:INFO] Policy Engine initialized (Profile: 'contest-2026', Default Action: 'DENY', 9 allowed domains).
+[2026-10-01 23:03:37] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 23:03:37] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 23:03:37] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 23:03:37] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 23:03:37] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 23:03:37] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 23:03:37] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+[2026-10-01 23:07:25] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-53067281
+[2026-10-01 23:08:19] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 23:08:19] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 23:08:19] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 23:08:19] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:08:19] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:08:36] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 23:08:36] [SYSTEM:INFO] Policy Engine initialized (Profile: 'contest-2026', Default Action: 'DENY', 9 allowed domains).
+[2026-10-01 23:08:36] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 23:08:36] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 23:08:36] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 23:08:36] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 23:08:36] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 23:08:36] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 23:08:36] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+[2026-10-01 23:08:56] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-53158796
+[2026-10-01 23:09:41] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 23:09:41] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 23:09:41] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 23:09:41] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:09:41] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!
+[2026-10-01 23:10:11] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 23:10:11] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 23:10:11] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 23:10:11] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:10:11] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:10:36] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 23:10:36] [SYSTEM:INFO] Policy Engine initialized (Profile: 'contest-2026', Default Action: 'DENY', 9 allowed domains).
+[2026-10-01 23:10:36] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 23:10:36] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 23:10:36] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 23:10:36] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 23:10:36] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 23:10:36] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 23:10:36] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+[2026-10-01 23:10:49] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-53271468
+[2026-10-01 23:12:06] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-53348562
+[2026-10-01 23:20:04] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 23:20:04] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 23:20:04] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 23:20:04] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:20:04] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:23:18] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 23:23:18] [SYSTEM:INFO] Policy Engine loaded 9 domains from 'config/policy.json'.
+[2026-10-01 23:23:18] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 23:23:18] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 23:23:18] [SYSTEM:WARN] FwpmSubLayerAdd0 failed with error: 0x00000005
+[2026-10-01 23:23:18] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 23:23:18] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 23:23:18] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 23:23:18] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 23:23:18] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+[2026-10-01 23:23:40] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-54042921
+[2026-10-01 23:24:20] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-54082484
+[2026-10-01 23:28:10] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 23:28:10] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 23:28:10] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 23:28:10] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:28:10] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:28:48] [SYSTEM:INFO] Discovering Windows Network Topology...
+[2026-10-01 23:28:48] [SYSTEM:INFO] Policy Engine loaded 9 domains from 'config/policy.json'.
+[2026-10-01 23:28:48] [SYSTEM:INFO] Participant Accounts Manager initialized (4 accounts loaded).
+[2026-10-01 23:28:48] [SYSTEM:INFO] Initializing Windows Filtering Platform (WFP) Firewall Engine...
+[2026-10-01 23:28:48] [SYSTEM:WARN] FwpmSubLayerAdd0 failed with error: 0x00000005
+[2026-10-01 23:28:48] [SYSTEM:ONLINE] Windows Filtering Platform (WFP) Firewall Manager ACTIVE.
+[2026-10-01 23:28:48] [SYSTEM:INFO] Starting C UDP DNS Resolver on Port 53...
+[2026-10-01 23:28:48] [SYSTEM:INFO] Starting Embedded C HTTP Server on Port 80...
+[2026-10-01 23:28:48] [SYSTEM:ONLINE] IdentityNet C UDP DNS Server ACTIVE on port 53.
+[2026-10-01 23:28:48] [SYSTEM:ONLINE] IdentityNet Embedded C HTTP Server ACTIVE on port 80.
+[2026-10-01 23:29:05] [SYSTEM:SUCCESS] Participant AUTHENTICATED: P001 (Alice Johnson) | IP: 192.168.137.249 | MAC: BA-E5-2D-77-5A-74 | Session: SESS-P001-54367203
+[2026-10-01 23:30:22] [SYSTEM:INFO] Shutting down IdentityNet Windows Gateway...
+[2026-10-01 23:30:22] [SYSTEM:INFO] Stopped Embedded HTTP Contest Server.
+[2026-10-01 23:30:22] [SYSTEM:INFO] Stopped DNS Filter Server.
+[2026-10-01 23:30:22] [SYSTEM:INFO] Cleaned up WFP Firewall engine and filters.
+
+# IdentityNet Traffic Log
+# Format: [Timestamp] | User | Src IP | Dst/Domain | Protocol | Action | Reason
+===============================================================================
+[2026-10-01 23:30:22] [SYSTEM:INFO] IdentityNet Gateway offline. Goodbye!

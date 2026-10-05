@@ -5,6 +5,7 @@ import threading
 from typing import Dict, Any, List, Tuple, Callable, Optional
 
 POLICY_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config/policy.json"))
+LEGACY_POLICY_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config/policies.json"))
 
 class PolicyEngine:
     """
@@ -12,15 +13,22 @@ class PolicyEngine:
     Manages allowlist network policies, evaluates domain requests,
     and broadcasts dynamic policy changes to network enforcement layers.
     """
-    def __init__(self, policy_file: str = POLICY_PATH, event_logger: Optional[Callable] = None):
+    def __init__(self, policy_file: str = POLICY_PATH,
+                 event_logger: Optional[Callable] = None,
+                 users_config_path: Optional[str] = None,
+                 policies_config_path: Optional[str] = None):
         self.policy_file = os.path.abspath(policy_file)
         self.event_logger = event_logger
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         
         self.active_profile_name = "contest-2026"
         self.mode = "allowlist"
         self.allowed_domains: List[str] = []
         self.blocked_explicit: List[str] = []
+        self.blocked_categories: List[str] = []
+        self.blocked_apps: List[str] = []
+        self.legacy_policies: Dict[str, Dict[str, Any]] = {}
+        self.legacy_policy_file = os.path.abspath(policies_config_path or LEGACY_POLICY_PATH)
         
         self.change_listeners: List[Callable] = []
         self.reload_policy()
@@ -34,17 +42,29 @@ class PolicyEngine:
             with open(self.policy_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 
-            self.active_profile_name = data.get("active_profile", "contest-2026")
+            self.active_profile_name = data.get("active_profile", data.get("profile", "contest-2026"))
             self.mode = data.get("mode", "allowlist")
-            
+
             profiles = data.get("profiles", {})
-            profile = profiles.get(self.active_profile_name, {})
-            
-            self.allowed_domains = profile.get("allowed", [
+            profile = profiles.get(self.active_profile_name)
+            if profile is None and "allowed_domains" in data:
+                profile = {
+                    "allowed": data.get("allowed_domains", []),
+                    "blocked_explicit": data.get("blocked_domains", [])
+                }
+            profile = profile or {}
+
+            self.allowed_domains = list(profile.get("allowed", [
                 "contest.identitynet.local",
                 "exam.identitynet.local"
-            ])
-            self.blocked_explicit = profile.get("blocked_explicit", [])
+            ]))
+            self.blocked_explicit = list(profile.get("blocked_explicit", profile.get("blocked_domains", [])))
+            self.blocked_categories = list(profile.get("blocked_categories", data.get("blocked_categories", [])))
+            self.blocked_apps = list(profile.get("blocked_apps", data.get("blocked_apps", [])))
+
+            if os.path.exists(self.legacy_policy_file):
+                with open(self.legacy_policy_file, "r", encoding="utf-8") as legacy_file:
+                    self.legacy_policies = json.load(legacy_file).get("policies", {})
 
         self._notify_listeners()
 
@@ -60,20 +80,26 @@ class PolicyEngine:
             except Exception as e:
                 pass
 
-    def evaluate(self, domain: str, client_ip: str = "0.0.0.0") -> Tuple[str, str]:
+    def evaluate(self, domain: str, client_ip: str = "0.0.0.0", user: Optional[str] = None) -> Tuple[str, str]:
         """
         Evaluate destination domain against active policy.
         Returns: Tuple (action ['ALLOWED'|'BLOCKED'], reason)
         """
         domain_clean = domain.lower().strip().rstrip(".")
+        allowed_domains = self.allowed_domains
+        blocked_explicit = self.blocked_explicit
+        if user and user in self.legacy_policies:
+            user_policy = self.legacy_policies[user]
+            allowed_domains = user_policy.get("allowed_domains", allowed_domains)
+            blocked_explicit = user_policy.get("blocked_domains", [])
 
         # 1. Local IdentityNet Gateway Domains (Always Allowed)
-        if domain_clean in ["contest.identitynet.local", "exam.identitynet.local", "192.168.50.1", "localhost"]:
+        if domain_clean in ["contest.identitynet.local", "exam.identitynet.local", "127.0.0.1", "192.168.137.1", "192.168.50.1", "localhost"]:
             reason = "Local IdentityNet Gateway destination"
             return "ALLOWED", reason
 
         # 2. Check Explicit Block List
-        for pattern in self.blocked_explicit:
+        for pattern in blocked_explicit:
             if self._matches_pattern(domain_clean, pattern):
                 reason = f"Explicitly blocked by policy rule '{pattern}'"
                 if self.event_logger:
@@ -81,7 +107,7 @@ class PolicyEngine:
                 return "BLOCKED", reason
 
         # 3. Check Allowed List
-        for pattern in self.allowed_domains:
+        for pattern in allowed_domains:
             if pattern == "*" or self._matches_pattern(domain_clean, pattern):
                 reason = f"Matched allowed domain policy '{pattern}'"
                 if self.event_logger:
@@ -106,6 +132,28 @@ class PolicyEngine:
             if domain == base or domain.endswith("." + base):
                 return True
         return False
+
+    def evaluate_application(self, application: str, category: str,
+                             client_ip: str = "0.0.0.0", user: Optional[str] = None) -> Tuple[str, str]:
+        """Evaluate an identified application without decrypting its traffic."""
+        blocked_categories = self.blocked_categories
+        blocked_apps = self.blocked_apps
+        if user and user in self.legacy_policies:
+            user_policy = self.legacy_policies[user]
+            blocked_categories = user_policy.get("blocked_categories", blocked_categories)
+            blocked_apps = user_policy.get("blocked_apps", blocked_apps)
+
+        if application in blocked_apps:
+            reason = f"Application '{application}' is blocked by policy"
+            if self.event_logger:
+                self.event_logger(client_ip, application, "BLOCKED", reason)
+            return "BLOCKED", reason
+        if category in blocked_categories:
+            reason = f"Application category '{category}' is blocked by policy"
+            if self.event_logger:
+                self.event_logger(client_ip, application, "BLOCKED", reason)
+            return "BLOCKED", reason
+        return "ALLOWED", f"Application '{application}' is allowed by policy"
 
     def add_allowed_domain(self, domain: str) -> bool:
         """Dynamically add a domain to active policy allowlist."""
@@ -136,7 +184,8 @@ class PolicyEngine:
                 return False
             with open(self.policy_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            if profile_name in data.get("profiles", {}):
+            profiles = data.setdefault("profiles", {})
+            if profile_name in profiles:
                 data["active_profile"] = profile_name
                 with open(self.policy_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
@@ -152,9 +201,12 @@ class PolicyEngine:
         with open(self.policy_file, "r", encoding="utf-8") as f:
             data = json.load(f)
         
-        if self.active_profile_name in data.get("profiles", {}):
-            data["profiles"][self.active_profile_name]["allowed"] = self.allowed_domains
-            data["profiles"][self.active_profile_name]["blocked_explicit"] = self.blocked_explicit
+        profiles = data.setdefault("profiles", {})
+        profile = profiles.setdefault(self.active_profile_name, {})
+        profile["allowed"] = self.allowed_domains
+        profile["blocked_explicit"] = self.blocked_explicit
+        profile["blocked_categories"] = self.blocked_categories
+        profile["blocked_apps"] = self.blocked_apps
 
         with open(self.policy_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)

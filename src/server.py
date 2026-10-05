@@ -1,9 +1,11 @@
 import os
 import json
+import secrets
 from typing import Optional
 
 try:
     from fastapi import FastAPI, Request, Form, Response, Cookie, Depends, HTTPException, status
+    from fastapi.security import HTTPBasic, HTTPBasicCredentials
     from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
     from fastapi.staticfiles import StaticFiles
     from fastapi.templating import Jinja2Templates
@@ -17,6 +19,7 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 
 if FASTAPI_AVAILABLE:
     app = FastAPI(title="IdentityNet Gateway Server", version="2.0.0")
+    admin_basic = HTTPBasic(auto_error=False)
 
     if os.path.exists(STATIC_DIR):
         app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -24,18 +27,31 @@ if FASTAPI_AVAILABLE:
 else:
     app = None
     templates = None
+    admin_basic = None
+    Depends = lambda dependency: None
 
 # Global Manager References (Set by main.py during startup)
 db_manager = None
 policy_engine = None
 firewall_manager = None
 router_manager = None
+gateway_ip = "127.0.0.1"
+lan_subnet = "192.168.137.0/24"
+
+def require_admin(credentials: "HTTPBasicCredentials" = Depends(admin_basic)):
+    """Require the administrator password configured in IDENTITYNET_ADMIN_PASSWORD."""
+    expected_password = os.environ.get("IDENTITYNET_ADMIN_PASSWORD")
+    if not expected_password:
+        raise HTTPException(status_code=503, detail="Set IDENTITYNET_ADMIN_PASSWORD before using the admin interface")
+    if not credentials or not secrets.compare_digest(credentials.username, "admin") or not secrets.compare_digest(credentials.password, expected_password):
+        raise HTTPException(status_code=401, detail="Administrator authentication required", headers={"WWW-Authenticate": "Basic"})
+    return credentials.username
 
 def get_client_ip(request) -> str:
     """Extract client IPv4 address from request."""
     if hasattr(request, "client") and request.client:
         return request.client.host
-    return "192.168.50.10"
+    return "127.0.0.1"
 
 def render_template(request: Request, template_name: str, context: dict, status_code: int = 200):
     """Helper for starlette/fastapi version-compatible template response."""
@@ -145,19 +161,19 @@ if FASTAPI_AVAILABLE:
     # =============================================================================
 
     @app.get("/admin", response_class=HTMLResponse)
-    async def admin_dashboard(request: Request):
+    async def admin_dashboard(request: Request, _: str = Depends(require_admin)):
         """Render Admin Monitoring Dashboard UI."""
         return render_template(request, "admin.html", {})
 
     @app.get("/api/admin/status")
-    async def admin_status_api():
+    async def admin_status_api(_: str = Depends(require_admin)):
         """Return Gateway system network status."""
         participants = db_manager.get_active_sessions() if db_manager else []
         return JSONResponse({
             "gateway": "ONLINE",
             "network": "IdentityNet-Hotspot",
-            "subnet": "192.168.50.0/24",
-            "gateway_ip": "192.168.50.1",
+            "subnet": lan_subnet,
+            "gateway_ip": gateway_ip,
             "dns": "IdentityNet Policy Resolver (Port 53)",
             "nat": "ACTIVE",
             "firewall": "ACTIVE (Default-Deny)",
@@ -166,21 +182,28 @@ if FASTAPI_AVAILABLE:
         })
 
     @app.get("/api/admin/participants")
-    async def admin_participants_api():
+    async def admin_participants_api(_: str = Depends(require_admin)):
         """Return list of active online participants."""
         if not db_manager:
             return JSONResponse([])
         return JSONResponse(db_manager.get_active_sessions())
 
     @app.get("/api/admin/events")
-    async def admin_events_api(limit: int = 50):
+    async def admin_events_api(limit: int = 50, _: str = Depends(require_admin)):
         """Return recent network events."""
         if not db_manager:
             return JSONResponse([])
         return JSONResponse(db_manager.get_recent_network_events(limit=limit))
 
+    @app.get("/api/admin/application-events")
+    async def admin_application_events_api(limit: int = 50, _: str = Depends(require_admin)):
+        """Return recent V2 application detections and enforcement decisions."""
+        if not db_manager:
+            return JSONResponse([])
+        return JSONResponse(db_manager.get_recent_application_events(limit=limit))
+
     @app.get("/api/admin/policy")
-    async def admin_get_policy_api():
+    async def admin_get_policy_api(_: str = Depends(require_admin)):
         """Return current policy allowlist."""
         if not policy_engine:
             return JSONResponse({})
@@ -188,11 +211,13 @@ if FASTAPI_AVAILABLE:
             "active_profile": policy_engine.active_profile_name,
             "mode": policy_engine.mode,
             "allowed": policy_engine.allowed_domains,
-            "blocked_explicit": policy_engine.blocked_explicit
+            "blocked_explicit": policy_engine.blocked_explicit,
+            "blocked_categories": policy_engine.blocked_categories,
+            "blocked_apps": policy_engine.blocked_apps
         })
 
     @app.post("/api/admin/policy/add")
-    async def admin_add_policy_domain(request: Request):
+    async def admin_add_policy_domain(request: Request, _: str = Depends(require_admin)):
         """Dynamically add domain to policy allowlist."""
         body = await request.json()
         domain = body.get("domain", "").strip()
@@ -203,7 +228,7 @@ if FASTAPI_AVAILABLE:
         return JSONResponse({"status": "SUCCESS" if success else "EXISTS", "domain": domain, "allowed": policy_engine.allowed_domains})
 
     @app.post("/api/admin/policy/remove")
-    async def admin_remove_policy_domain(request: Request):
+    async def admin_remove_policy_domain(request: Request, _: str = Depends(require_admin)):
         """Dynamically remove domain from policy allowlist."""
         body = await request.json()
         domain = body.get("domain", "").strip()
@@ -214,7 +239,7 @@ if FASTAPI_AVAILABLE:
         return JSONResponse({"status": "SUCCESS" if success else "NOT_FOUND", "domain": domain, "allowed": policy_engine.allowed_domains})
 
     @app.post("/api/admin/policy/profile")
-    async def admin_switch_profile(request: Request):
+    async def admin_switch_profile(request: Request, _: str = Depends(require_admin)):
         """Switch active profile (e.g. 'contest-2026' vs 'exam-2026')."""
         body = await request.json()
         profile_name = body.get("profile", "").strip()

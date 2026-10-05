@@ -69,6 +69,23 @@ class DatabaseManager:
                 );
             """)
 
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS application_events (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    participant_id TEXT,
+                    client_ip TEXT NOT NULL,
+                    destination_ip TEXT NOT NULL DEFAULT '',
+                    application TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    detection_method TEXT NOT NULL,
+                    action TEXT NOT NULL
+                );
+            """)
+            columns = {row[1] for row in cursor.execute("PRAGMA table_info(application_events);").fetchall()}
+            if "destination_ip" not in columns:
+                cursor.execute("ALTER TABLE application_events ADD COLUMN destination_ip TEXT NOT NULL DEFAULT '';")
+
             # Questions table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS questions (
@@ -212,6 +229,30 @@ class DatabaseManager:
                 FROM network_events
                 ORDER BY id DESC LIMIT ?;
             """, (limit,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def log_application_event(self, client_ip: str, application: str, category: str,
+                               detection_method: str, action: str, destination_ip: str = ""):
+        participant = self.get_participant_by_ip(client_ip)
+        participant_id = participant["participant_id"] if participant else "Unauthenticated"
+        with self.get_connection() as conn:
+            conn.execute(
+                     """INSERT INTO application_events
+                         (participant_id, client_ip, destination_ip, application, category, detection_method, action)
+                         VALUES (?, ?, ?, ?, ?, ?, ?);""",
+                     (participant_id, client_ip, destination_ip, application, category, detection_method, action),
+            )
+            conn.commit()
+
+    def get_recent_application_events(self, limit: int = 50) -> List[Dict[str, Any]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT timestamp, participant_id, client_ip, destination_ip, application,
+                          category, detection_method, action
+                   FROM application_events ORDER BY id DESC LIMIT ?;""",
+                (limit,),
+            )
             return [dict(row) for row in cursor.fetchall()]
 
     def get_questions(self) -> List[Dict[str, Any]]:

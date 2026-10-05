@@ -1,15 +1,45 @@
 {
-  "profile": "contest-2026",
-  "default_action": "DENY",
-  "allowed_domains": [
-    "contest.identitynet.local",
-    "exam.identitynet.local",
-    "github.com",
-    "*.github.com",
-    "githubusercontent.com",
-    "*.githubusercontent.com",
-    "docs.python.org",
-    "python.org",
-    "*.python.org"
-  ]
+  "active_profile": "contest-2026",
+  "mode": "allowlist",
+  "blocked_categories": [
+    "Messaging",
+    "SocialMedia",
+    "Streaming"
+  ],
+  "blocked_apps": [],
+  "profiles": {
+    "contest-2026": {
+      "allowed": [
+        "contest.identitynet.local",
+        "exam.identitynet.local",
+        "github.com",
+        "*.github.com",
+        "githubusercontent.com",
+        "*.githubusercontent.com",
+        "docs.python.org",
+        "python.org",
+        "*.python.org"
+      ],
+      "blocked_explicit": [],
+      "blocked_categories": [
+        "Messaging",
+        "SocialMedia",
+        "Streaming"
+      ],
+      "blocked_apps": []
+    },
+    "exam-2026": {
+      "allowed": [
+        "contest.identitynet.local",
+        "exam.identitynet.local"
+      ],
+      "blocked_explicit": [],
+      "blocked_categories": [
+        "Messaging",
+        "SocialMedia",
+        "Streaming"
+      ],
+      "blocked_apps": []
+    }
+  }
 }

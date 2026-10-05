@@ -125,6 +125,8 @@ BOOL wfp_add_anti_bypass_dns_filter(const char *hotspot_subnet) {
     filter.subLayerKey = GUID_IDENTITYNET_SUBLAYER;
     filter.action.type = FWP_ACTION_BLOCK;
     filter.weight.type = FWP_UINT64;
+    UINT64 block_weight = 0x1000;
+    filter.weight.uint64 = &block_weight;
 
     conditions[0].fieldKey = GUID_FWPM_CONDITION_IP_REMOTE_PORT;
     conditions[0].matchType = FWP_MATCH_EQUAL;
@@ -158,6 +160,9 @@ BOOL wfp_add_allow_destination_ip(const char *ip_address) {
     filter.layerKey = GUID_FWPM_LAYER_ALE_AUTH_CONNECT_V4;
     filter.subLayerKey = GUID_IDENTITYNET_SUBLAYER;
     filter.action.type = FWP_ACTION_PERMIT;
+    UINT64 permit_weight = 0xF000;
+    filter.weight.type = FWP_UINT64;
+    filter.weight.uint64 = &permit_weight;
 
     conditions[0].fieldKey = GUID_FWPM_CONDITION_IP_REMOTE_ADDRESS;
     conditions[0].matchType = FWP_MATCH_EQUAL;

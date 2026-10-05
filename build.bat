@@ -7,12 +7,14 @@ echo =====================================================================
 echo  Compiling IdentityNet Windows C Gateway Server...
 echo =====================================================================
 
-set GCC_PATH="C:\Program Files\CodeBlocks\MinGW\bin\gcc.exe"
-
-if exist %GCC_PATH% (
-    set CC=%GCC_PATH%
-) else (
+where gcc >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
     set CC=gcc
+) else if exist "D:\FOLDER\CodeBlocks\MinGW\bin\gcc.exe" (
+    set CC="D:\FOLDER\CodeBlocks\MinGW\bin\gcc.exe"
+) else (
+    echo [ERROR] gcc.exe was not found on PATH.
+    exit /b 1
 )
 
 if not exist bin mkdir bin
