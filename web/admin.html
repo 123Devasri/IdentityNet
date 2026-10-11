@@ -3,119 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IdentityNet - Admin Gateway Dashboard</title>
+    <title>IdentityNet | Admin</title>
     <link rel="stylesheet" href="/style.css">
 </head>
 <body class="admin-body">
-    <nav class="navbar navbar-admin">
-        <div class="nav-brand">
-            <h2>IDENTITYNET <span>WINDOWS C / WFP GATEWAY</span></h2>
-        </div>
-        <div class="user-status-bar">
-            <span class="status-indicator">● GATEWAY ONLINE</span>
-            <span class="subnet-tag">SUBNET: 192.168.137.0/24</span>
-            <button onclick="refreshDashboard()" class="btn btn-secondary btn-sm">🔄 Refresh</button>
-        </div>
-    </nav>
-
-    <div class="container main-content admin-layout">
-        <!-- Top Status Grid -->
-        <div class="status-grid">
-            <div class="stat-card">
-                <div class="stat-title">Gateway Status</div>
-                <div class="stat-value text-green" id="statGateway">ONLINE</div>
-                <div class="stat-sub">IP: 192.168.137.1</div>
+    <header class="topbar">
+        <a class="brand" href="#home">https://github.com/123Devasri/IdentityNet/pull/6/conflict?name=web%252Fadmin.html&ancestor_oid=536f5589716cd6b5c680dd098926882069f4a94c&base_oid=071123e383667c34c88e6b065c7df2ed868e619c&head_oid=4fb382b7a44c4b04aa1376673927772a6b6bdc93IdentityNet</a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a class="nav-link active" href="#home">Home</a>
+            <a class="nav-link" href="#access-control">Access control</a>
+        </nav>
+        <div class="topbar-meta"><span class="online-dot"></span><span>Gateway online</span><button class="btn btn-light btn-small" type="button" onclick="refreshDashboard()">Refresh</button></div>
+    </header>
+    <main class="container admin-layout">
+        <section id="home" class="page-section">
+            <div class="page-heading"><div><p class="eyebrow">Overview</p><h1>Users</h1><p class="page-description">Monitor connected users and review blocked access attempts.</p></div><div class="summary-chip"><strong id="statParticipants">0</strong> connected</div></div>
+            <div class="card table-card"><div class="card-heading"><h2>Connected users</h2><span class="muted" id="partBadge">0 users</span></div><div class="table-wrap"><table class="data-table" id="participantsTable"><thead><tr><th>User ID</th><th>Name</th><th>Status</th><th>Unauthorized access</th></tr></thead><tbody><tr><td colspan="4" class="empty-state">Loading users...</td></tr></tbody></table></div></div>
+        </section>
+        <section id="access-control" class="page-section">
+            <div class="page-heading"><div><p class="eyebrow">Permissions</p><h1>Access control</h1><p class="page-description">Set allowed sites for everyone or create a rule for one user.</p></div><span class="policy-status">Default deny</span></div>
+            <div class="control-grid">
+                <div class="card"><div class="card-heading"><div><h2>Global sites</h2><p class="helper-text">Allowed for all users unless a local rule overrides it.</p></div></div><form id="addDomainForm" class="inline-form" onsubmit="addDomain(event)"><label class="sr-only" for="newDomain">Website</label><input type="text" id="newDomain" placeholder="example.com" required><button class="btn btn-primary btn-small" type="submit">Add site</button></form><ul class="domain-list" id="allowedDomainList"><li class="empty-state">Loading sites...</li></ul></div>
+                <div class="card"><div class="card-heading"><div><h2>User access</h2><p class="helper-text">Manage an allowed site for one user.</p></div></div><form id="userAccessForm" class="user-access-form" onsubmit="saveUserAccess(event)"><label for="accessUser">User</label><select id="accessUser" required><option value="">Select a user</option></select><label for="userDomain">Website</label><div class="inline-form"><input type="text" id="userDomain" placeholder="example.com" required><button class="btn btn-primary btn-small" type="submit">Allow site</button></div></form><ul class="domain-list" id="userDomainList"><li class="empty-state">Select a user to view local sites.</li></ul></div>
             </div>
-            <div class="stat-card">
-                <div class="stat-title">Active Policy Profile</div>
-                <div class="stat-value" id="statProfile">contest-2026</div>
-                <div class="stat-sub" id="statMode">Mode: Default-Deny</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Connected Participants</div>
-                <div class="stat-value text-blue" id="statParticipants">0</div>
-                <div class="stat-sub">Authenticated Sessions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">C & WFP Services</div>
-                <div class="stat-value text-purple">ACTIVE</div>
-                <div class="stat-sub">C DNS Server & WFP Filter</div>
-            </div>
-        </div>
-
-        <div class="admin-split-view">
-            <!-- Left Side: Connected Participants -->
-            <div class="admin-main-panel">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>👥 Connected Hotspot Participants</h3>
-                        <span class="badge" id="partBadge">0 Active</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table" id="participantsTable">
-                            <thead>
-                                <tr>
-                                    <th>Participant ID</th>
-                                    <th>Name</th>
-                                    <th>IP Address</th>
-                                    <th>MAC Address</th>
-                                    <th>Status</th>
-                                    <th>Login Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="6" class="text-center">Loading participants...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Recent Application Access Section -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📱 Live Application Access</h3>
-                        <button onclick="fetchEvents()" class="btn btn-secondary btn-sm">Refresh Feed</button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table" id="eventsTable">
-                            <thead>
-                                <tr>
-                                    <th>User Name</th>
-                                    <th>Application</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="2" class="text-center">Monitoring live application access...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🛡️ Windows Allowlist Policy Editor</h3>
-                    </div>
-                    <div class="policy-controls">
-                        <div class="domain-list-header">
-                            <h4>Current Allowed Destinations:</h4>
-                        </div>
-                        <ul class="domain-list" id="allowedDomainList">
-                            <li class="loading">Loading policy...</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Side: Info Card & Architecture -->
-            <div class="admin-side-panel">
-                <div class="card info-card">
-                    <h4>🛡️ Windows Filtering Platform (WFP)</h4>
-                    <p>IdentityNet Gateway operates on a strict default-deny policy using Winsock2 C sockets and WFP API filtering (<code>fwpapi.h</code>). Any domain or IP not explicitly allowed above is automatically dropped.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
+        </section>
+    </main>
     <script src="/admin.js"></script>
 </body>
 </html>

@@ -1,90 +1,13 @@
-// Admin Dashboard Live Script
-
-document.addEventListener("DOMContentLoaded", () => {
-    refreshDashboard();
-    setInterval(refreshDashboard, 3000);
-});
-
-async function refreshDashboard() {
-    await fetchStatus();
-    await fetchParticipants();
-    await fetchEvents();
-    await fetchPolicy();
-}
-
-async function fetchStatus() {
-    try {
-        const res = await fetch("/api/admin/status");
-        if (!res.ok) return;
-        const data = await res.json();
-        document.getElementById("statGateway").innerText = data.gateway;
-        document.getElementById("statProfile").innerText = data.policy_profile;
-        document.getElementById("statParticipants").innerText = data.active_participants_count;
-    } catch (e) {}
-}
-
-async function fetchParticipants() {
-    try {
-        const res = await fetch("/api/admin/participants");
-        if (!res.ok) return;
-        const list = await res.json();
-        
-        document.getElementById("partBadge").innerText = list.length + " Active";
-        const tbody = document.querySelector("#participantsTable tbody");
-        
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No active participant sessions</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(p => `
-            <tr>
-                <td><strong>${p.participant_id}</strong></td>
-                <td>${p.name}</td>
-                <td><code>${p.ip_address}</code></td>
-                <td><code>${p.mac_address || '00-00-00-00-00-00'}</code></td>
-                <td><span class="badge-allow">${p.status}</span></td>
-                <td>${p.login_time}</td>
-            </tr>
-        `).join("");
-    } catch (e) {}
-}
-
-async function fetchPolicy() {
-    try {
-        const res = await fetch("/api/admin/policy");
-        if (!res.ok) return;
-        const data = await res.json();
-        
-        const allowedList = data.allowed || [];
-        const ul = document.getElementById("allowedDomainList");
-        
-        ul.innerHTML = allowedList.map(domain => `
-            <li>
-                <span>🌐 ${domain}</span>
-            </li>
-        `).join("");
-    } catch (e) {}
-}
-
-async function fetchEvents() {
-    try {
-        const res = await fetch("/api/admin/events?limit=25");
-        if (!res.ok) return;
-        const list = await res.json();
-        const tbody = document.querySelector("#eventsTable tbody");
-
-        if (!tbody) return;
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No application access recorded yet</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(e => `
-            <tr>
-                <td><strong>${e.user_name || 'Unknown User'}</strong></td>
-                <td><span class="badge-allow">${e.application || 'Unknown Application'}</span></td>
-            </tr>
-        `).join("");
-    } catch (e) {}
-}
+let participants=[];let userPolicies={};
+document.addEventListener("DOMContentLoaded",()=>{refreshDashboard();document.querySelectorAll(".nav-link").forEach(link=>link.addEventListener("click",()=>{document.querySelectorAll(".nav-link").forEach(item=>item.classList.remove("active"));link.classList.add("active")}));document.getElementById("accessUser").addEventListener("change",renderUserSites);setInterval(refreshDashboard,10000)});
+async function getJson(url,options){const response=await fetch(url,options);if(!response.ok)throw new Error(`Request failed: ${response.status}`);return response.json()}
+async function refreshDashboard(){try{const [userList,events,policy]=await Promise.all([getJson("/api/admin/participants"),getJson("/api/admin/events?limit=100"),getJson("/api/admin/policy")]);participants=userList;userPolicies=policy.user_policies||{};renderParticipants(events);renderGlobalSites(policy.allowed||[]);renderUserOptions()}catch(error){console.error("Unable to refresh dashboard",error)}}
+function renderParticipants(events){const blockedByUser={};events.filter(event=>event.action==="BLOCKED").forEach(event=>{const userId=event.participant_id;if(userId&&userId!=="Unauthenticated")blockedByUser[userId]=(blockedByUser[userId]||0)+1});document.getElementById("statParticipants").textContent=participants.length;document.getElementById("partBadge").textContent=`${participants.length} user${participants.length===1?"":"s"}`;const tbody=document.querySelector("#participantsTable tbody");if(!participants.length){tbody.innerHTML='<tr><td colspan="4" class="empty-state">No connected users.</td></tr>';return}tbody.innerHTML=participants.map(user=>{const blocked=blockedByUser[user.participant_id]||0;return`<tr><td><strong>${escapeHtml(user.participant_id)}</strong></td><td>${escapeHtml(user.name)}</td><td><span class="status-pill status-online">${escapeHtml(user.status||"Online")}</span></td><td><span class="access-count${blocked?"":" clear"}">${blocked?`${blocked} blocked`:"None detected"}</span></td></tr>`}).join("")}
+function renderGlobalSites(sites){const list=document.getElementById("allowedDomainList");list.innerHTML=sites.length?sites.map(site=>`<li><span>${escapeHtml(site)}</span><button class="remove-site" onclick="removeDomain('${encodeURIComponent(site)}')">Remove</button></li>`).join(""):'<li class="empty-state">No global sites configured.</li>'}
+function renderUserOptions(){const select=document.getElementById("accessUser");const current=select.value;select.innerHTML='<option value="">Select a user</option>'+participants.map(user=>`<option value="${escapeHtml(user.participant_id)}">${escapeHtml(user.participant_id)} — ${escapeHtml(user.name)}</option>`).join("");select.value=current;renderUserSites()}
+function renderUserSites(){const userId=document.getElementById("accessUser").value;const sites=userPolicies[userId]||[];document.getElementById("userDomainList").innerHTML=userId?(sites.length?sites.map(site=>`<li><span>${escapeHtml(site)}</span><button class="remove-site" onclick="removeUserDomain('${encodeURIComponent(userId)}','${encodeURIComponent(site)}')">Remove</button></li>`).join(""):'<li class="empty-state">No local sites configured.</li>'):'<li class="empty-state">Select a user to view local sites.</li>'}
+async function addDomain(event){event.preventDefault();const input=document.getElementById("newDomain");const domain=input.value.trim();if(!domain)return;try{await getJson("/api/admin/policy/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domain})});input.value="";await refreshDashboard()}catch(error){console.error("Unable to add global site",error)}}
+async function removeDomain(encodedDomain){const domain=decodeURIComponent(encodedDomain);if(!confirm(`Remove ${domain} from the global sites?`))return;try{await getJson("/api/admin/policy/remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domain})});await refreshDashboard()}catch(error){console.error("Unable to remove global site",error)}}
+async function saveUserAccess(event){event.preventDefault();const user=document.getElementById("accessUser").value;const domainInput=document.getElementById("userDomain");const domain=domainInput.value.trim();if(!user||!domain)return;try{await getJson("/api/admin/policy/user/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user,domain})});domainInput.value="";await refreshDashboard()}catch(error){console.error("Unable to save user access",error)}}
+async function removeUserDomain(encodedUser,encodedDomain){try{await getJson("/api/admin/policy/user/remove",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user:decodeURIComponent(encodedUser),domain:decodeURIComponent(encodedDomain)})});await refreshDashboard()}catch(error){console.error("Unable to remove user access",error)}}
+function escapeHtml(value){return String(value).replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[character]))}

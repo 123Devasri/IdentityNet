@@ -148,6 +148,50 @@ class DatabaseManager:
                 return dict(row)
         return None
 
+    def create_participant(self, participant_id: str, name: str, password: str) -> Dict[str, Any]:
+        """Create a participant account and return its public details."""
+        participant_id = participant_id.strip()
+        name = name.strip()
+        if not participant_id or not name or not password:
+            raise ValueError("User ID, name, and password are required")
+
+        with self.get_connection() as conn:
+            try:
+                conn.execute(
+                    "INSERT INTO participants (participant_id, name, password_hash) VALUES (?, ?, ?);",
+                    (participant_id, name, hash_password(password)),
+                )
+                conn.commit()
+            except sqlite3.IntegrityError as error:
+                raise ValueError(f"User ID '{participant_id}' already exists") from error
+        return {"participant_id": participant_id, "name": name, "status": "OFFLINE", "unauthorized_access_count": 0}
+
+    def get_participants_with_access_stats(self) -> List[Dict[str, Any]]:
+        """Fetch every participant with current status and blocked access count."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT
+                    p.participant_id,
+                    p.name,
+                    COALESCE(s.status, 'OFFLINE') AS status,
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM network_events e
+                        WHERE e.participant_id = p.participant_id AND e.action = 'BLOCKED'
+                    ), 0) AS unauthorized_access_count
+                FROM participants p
+                LEFT JOIN sessions s ON s.session_id = (
+                    SELECT s2.session_id
+                    FROM sessions s2
+                    WHERE s2.participant_id = p.participant_id
+                    ORDER BY s2.login_time DESC
+                    LIMIT 1
+                )
+                ORDER BY p.participant_id ASC;
+            """)
+            return [dict(row) for row in cursor.fetchall()]
+
     def create_session(self, participant_id: str, ip_address: str, mac_address: Optional[str] = None) -> str:
         """Create a new participant login session and return session_id."""
         session_id = str(uuid.uuid4())

@@ -3,136 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IdentityNet - Admin Gateway Control Dashboard</title>
+    <title>IdentityNet | Admin</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="admin-body">
-    <nav class="navbar navbar-admin">
-        <div class="nav-brand">
-            <h2>IDENTITYNET <span>ADMIN CONTROL PLANE</span></h2>
+    <header class="topbar">
+        <a class="brand" href="#home">IdentityNet</a>
+        <nav class="main-nav" aria-label="Main navigation">
+            <a class="nav-link active" href="#home">Home</a>
+            <a class="nav-link" href="#access-control">Access control</a>
+        </nav>
+        <div class="topbar-meta">
+            <span class="online-dot"></span>
+            <span>Gateway online</span>
+            <button class="btn btn-light btn-small" type="button" onclick="refreshDashboard()">Refresh</button>
         </div>
-        <div class="user-status-bar">
-            <span class="status-indicator">● GATEWAY ONLINE</span>
-            <span class="subnet-tag">SUBNET: 192.168.50.0/24</span>
-            <button onclick="refreshDashboard()" class="btn btn-secondary btn-sm">🔄 Refresh</button>
-        </div>
-    </nav>
+    </header>
 
-    <div class="container main-content admin-layout">
-        <!-- Top Status Grid -->
-        <div class="status-grid">
-            <div class="stat-card">
-                <div class="stat-title">Gateway Status</div>
-                <div class="stat-value text-green" id="statGateway">ONLINE</div>
-                <div class="stat-sub">IP: 192.168.50.1</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Active Policy Profile</div>
-                <div class="stat-value" id="statProfile">contest-2026</div>
-                <div class="stat-sub" id="statMode">Mode: Default-Deny</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Online Participants</div>
-                <div class="stat-value text-blue" id="statParticipants">0</div>
-                <div class="stat-sub">Authenticated Sessions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-title">Data Plane Services</div>
-                <div class="stat-value text-purple">ACTIVE</div>
-                <div class="stat-sub">DNS Filter, NAT & Firewall</div>
-            </div>
-        </div>
-
-        <div class="admin-split-view">
-            <!-- Left Side: Connected Participants & Network Events -->
-            <div class="admin-main-panel">
-                <!-- Active Participants Section -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>👥 Connected Participants</h3>
-                        <span class="badge" id="partBadge">0 Active</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table" id="participantsTable">
-                            <thead>
-                                <tr>
-                                    <th>Participant ID</th>
-                                    <th>Name</th>
-                                    <th>IP Address</th>
-                                    <th>MAC Address</th>
-                                    <th>Status</th>
-                                    <th>Login Time</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="6" class="text-center">Loading participants...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+    <main class="container admin-layout">
+        <section id="home" class="page-section">
+            <div class="page-heading">
+                <div>
+                    <p class="eyebrow">Overview</p>
+                    <h1>Users</h1>
+                    <p class="page-description">Monitor connected users and review blocked access attempts.</p>
                 </div>
-
-                <!-- Recent Application Access Section -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>📱 Live Application Access</h3>
-                        <button onclick="fetchEvents()" class="btn btn-secondary btn-sm">Refresh Feed</button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table" id="eventsTable">
-                            <thead>
-                                <tr>
-                                    <th>User Name</th>
-                                    <th>Application</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td colspan="2" class="text-center">Monitoring live application access...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="summary-chip"><strong id="statParticipants">0</strong> users</div>
+            </div>
+            <div class="card table-card">
+                <div class="card-heading">
+                    <h2>Users</h2>
+                    <span class="muted" id="partBadge">0 users</span>
+                </div>
+                <div class="table-wrap">
+                    <table class="data-table" id="participantsTable">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Unauthorized access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="empty-state">Loading users...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-
-            <!-- Right Side: Policy Editor & Controls -->
-            <div class="admin-side-panel">
-                <div class="card">
-                    <div class="card-header">
-                        <h3>🛡️ Allowlist Policy Editor</h3>
+            <div class="card add-user-card">
+                <div class="card-heading">
+                    <div>
+                        <h2>Add user</h2>
+                        <p class="helper-text">Create a participant account stored in the IdentityNet database.</p>
                     </div>
-                    <div class="policy-controls">
-                        <label>Active Profile Preset:</label>
-                        <div class="profile-switcher">
-                            <button onclick="switchProfile('contest-2026')" class="btn btn-sm" id="btnContestProf">Contest 2026</button>
-                            <button onclick="switchProfile('exam-2026')" class="btn btn-sm" id="btnExamProf">Exam 2026</button>
+                </div>
+                <form id="addUserForm" class="add-user-form" onsubmit="addUser(event)">
+                    <div>
+                        <label for="newUserId">User ID</label>
+                        <input type="text" id="newUserId" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="newUserName">Name</label>
+                        <input type="text" id="newUserName" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="newUserPassword">Password</label>
+                        <input type="password" id="newUserPassword" required autocomplete="new-password">
+                    </div>
+                    <button class="btn btn-primary btn-small" type="submit">Add user</button>
+                </form>
+                <p id="userFormMessage" class="form-message" role="status"></p>
+            </div>
+        </section>
+
+        <section id="access-control" class="page-section">
+            <div class="page-heading">
+                <div>
+                    <p class="eyebrow">Permissions</p>
+                    <h1>Access control</h1>
+                    <p class="page-description">Set allowed sites for everyone or create a rule for one user.</p>
+                </div>
+                <span class="policy-status">Default deny</span>
+            </div>
+
+            <div class="control-grid">
+                <div class="card">
+                    <div class="card-heading">
+                        <div>
+                            <h2>Global sites</h2>
+                            <p class="helper-text">Allowed for all users unless a local rule overrides it.</p>
                         </div>
-
-                        <hr class="divider">
-
-                        <form id="addDomainForm" onsubmit="addDomain(event)" class="add-domain-form">
-                            <label for="newDomain">Add Allowed Domain / Pattern:</label>
-                            <div class="input-group">
-                                <input type="text" id="newDomain" placeholder="e.g. docs.python.org" required>
-                                <button type="submit" class="btn btn-primary btn-sm">+ ADD</button>
-                            </div>
-                        </form>
-
-                        <div class="domain-list-header">
-                            <h4>Current Allowed Destinations:</h4>
-                        </div>
-                        <ul class="domain-list" id="allowedDomainList">
-                            <li class="loading">Loading policy...</li>
-                        </ul>
                     </div>
+                    <form id="addDomainForm" class="inline-form" onsubmit="addDomain(event)">
+                        <label class="sr-only" for="newDomain">Website</label>
+                        <input type="text" id="newDomain" placeholder="example.com" required>
+                        <button class="btn btn-primary btn-small" type="submit">Add site</button>
+                    </form>
+                    <ul class="domain-list" id="allowedDomainList">
+                        <li class="empty-state">Loading sites...</li>
+                    </ul>
                 </div>
 
-                <div class="card info-card">
-                    <h4>🔒 Default-Deny Security Note</h4>
-                    <p>IdentityNet Gateway operates on a strict default-deny egress policy. Any domain or IP not explicitly allowed above is automatically dropped at the network layer.</p>
+                <div class="card">
+                    <div class="card-heading">
+                        <div>
+                            <h2>User access</h2>
+                            <p class="helper-text">Manage an allowed site for one user.</p>
+                        </div>
+                    </div>
+                    <form id="userAccessForm" class="user-access-form" onsubmit="saveUserAccess(event)">
+                        <label for="accessUser">User</label>
+                        <select id="accessUser" required>
+                            <option value="">Select a user</option>
+                        </select>
+                        <label for="userDomain">Website</label>
+                        <div class="inline-form">
+                            <input type="text" id="userDomain" placeholder="example.com" required>
+                            <button class="btn btn-primary btn-small" type="submit">Allow site</button>
+                        </div>
+                    </form>
+                    <ul class="domain-list" id="userDomainList">
+                        <li class="empty-state">Select a user to view local sites.</li>
+                    </ul>
                 </div>
             </div>
-        </div>
-    </div>
-
+        </section>
+    </main>
     <script src="/static/js/admin.js"></script>
 </body>
 </html>
