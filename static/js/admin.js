@@ -59,26 +59,16 @@ async function fetchEvents() {
         const tbody = document.querySelector("#eventsTable tbody");
 
         if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No network events recorded yet</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No application access recorded yet</td></tr>';
             return;
         }
 
-        tbody.innerHTML = list.map(e => {
-            const badge = e.action === "ALLOWED" 
-                ? '<span class="badge-allow">ALLOWED</span>' 
-                : '<span class="badge-block">BLOCKED</span>';
-            
-            return `
-                <tr>
-                    <td><small>${e.timestamp}</small></td>
-                    <td><code>${e.client_ip}</code></td>
-                    <td><strong>${e.participant_id || 'Unauthenticated'}</strong></td>
-                    <td><code>${e.destination}</code></td>
-                    <td>${badge}</td>
-                    <td><small class="text-muted">${e.reason || ''}</small></td>
-                </tr>
-            `;
-        }).join("");
+        tbody.innerHTML = list.map(e => `
+            <tr>
+                <td><strong>${e.user_name || 'Unknown User'}</strong></td>
+                <td><span class="badge-allow">${e.application || 'Unknown Application'}</span></td>
+            </tr>
+        `).join("");
     } catch (e) {}
 }
 

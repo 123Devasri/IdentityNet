@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 async function refreshDashboard() {
     await fetchStatus();
     await fetchParticipants();
+    await fetchEvents();
     await fetchPolicy();
 }
 
@@ -62,6 +63,28 @@ async function fetchPolicy() {
             <li>
                 <span>🌐 ${domain}</span>
             </li>
+        `).join("");
+    } catch (e) {}
+}
+
+async function fetchEvents() {
+    try {
+        const res = await fetch("/api/admin/events?limit=25");
+        if (!res.ok) return;
+        const list = await res.json();
+        const tbody = document.querySelector("#eventsTable tbody");
+
+        if (!tbody) return;
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No application access recorded yet</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = list.map(e => `
+            <tr>
+                <td><strong>${e.user_name || 'Unknown User'}</strong></td>
+                <td><span class="badge-allow">${e.application || 'Unknown Application'}</span></td>
+            </tr>
         `).join("");
     } catch (e) {}
 }
