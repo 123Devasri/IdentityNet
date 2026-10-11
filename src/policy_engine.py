@@ -177,6 +177,45 @@ class PolicyEngine:
                 return True
         return False
 
+    def get_user_allowed_domains(self) -> Dict[str, List[str]]:
+        """Return local allowlists keyed by participant ID or configured user name."""
+        with self.lock:
+            return {
+                user: list(policy.get("allowed_domains", []))
+                for user, policy in self.legacy_policies.items()
+            }
+
+    def add_user_allowed_domain(self, user: str, domain: str) -> bool:
+        """Add a site to one user's local allowlist and persist the legacy policy."""
+        user = user.strip()
+        domain = domain.lower().strip().rstrip(".")
+        if not user or not domain:
+            return False
+        with self.lock:
+            policy = self.legacy_policies.setdefault(user, {
+                "default_action": "BLOCK",
+                "allowed_domains": [],
+                "blocked_domains": []
+            })
+            allowed = policy.setdefault("allowed_domains", [])
+            if domain in allowed:
+                return False
+            allowed.append(domain)
+            self._save_legacy_policies()
+            return True
+
+    def remove_user_allowed_domain(self, user: str, domain: str) -> bool:
+        """Remove a site from one user's local allowlist and persist the policy."""
+        domain = domain.lower().strip().rstrip(".")
+        with self.lock:
+            policy = self.legacy_policies.get(user)
+            allowed = policy.get("allowed_domains", []) if policy else []
+            if domain not in allowed:
+                return False
+            allowed.remove(domain)
+            self._save_legacy_policies()
+            return True
+
     def set_active_profile(self, profile_name: str) -> bool:
         """Switch active policy profile (e.g., 'contest-2026' or 'exam-2026')."""
         with self.lock:
@@ -210,3 +249,8 @@ class PolicyEngine:
 
         with open(self.policy_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
+
+    def _save_legacy_policies(self):
+        """Persist per-user rules without changing the active global profile."""
+        with open(self.legacy_policy_file, "w", encoding="utf-8") as f:
+            json.dump({"policies": self.legacy_policies}, f, indent=2)

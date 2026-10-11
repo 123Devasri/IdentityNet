@@ -52,6 +52,16 @@ class TestIdentityNetGateway(unittest.TestCase):
         active = self.db.get_active_sessions()
         self.assertTrue(len(active) >= 1)
 
+    def test_admin_participant_creation(self):
+        """Test creating a new participant account and rejecting duplicate IDs."""
+        created = self.db.create_participant("P099", "New User", "secure-pass")
+        self.assertEqual(created["participant_id"], "P099")
+        self.assertEqual(created["status"], "OFFLINE")
+        self.assertIsNotNone(self.db.authenticate_participant("P099", "secure-pass"))
+
+        with self.assertRaises(ValueError):
+            self.db.create_participant("P099", "Another User", "another-pass")
+
     def test_policy_evaluation(self):
         """Test Allowlist policy evaluation matching rules."""
         # 1. Local gateway domains -> ALLOWED

@@ -183,10 +183,28 @@ if FASTAPI_AVAILABLE:
 
     @app.get("/api/admin/participants")
     async def admin_participants_api(_: str = Depends(require_admin)):
-        """Return list of active online participants."""
+        """Return all participant accounts with status and access statistics."""
         if not db_manager:
             return JSONResponse([])
-        return JSONResponse(db_manager.get_active_sessions())
+        return JSONResponse(db_manager.get_participants_with_access_stats())
+
+    @app.post("/api/admin/participants")
+    async def admin_create_participant_api(request: Request, _: str = Depends(require_admin)):
+        """Create a participant account from the admin dashboard."""
+        if not db_manager:
+            raise HTTPException(status_code=503, detail="Database is not available")
+        body = await request.json()
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="Request body must be a JSON object")
+        try:
+            participant = db_manager.create_participant(
+                body.get("participant_id", ""),
+                body.get("name", ""),
+                body.get("password", ""),
+            )
+        except (AttributeError, TypeError, ValueError) as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return JSONResponse(participant, status_code=201)
 
     @app.get("/api/admin/events")
     async def admin_events_api(limit: int = 50, _: str = Depends(require_admin)):
@@ -211,6 +229,7 @@ if FASTAPI_AVAILABLE:
             "active_profile": policy_engine.active_profile_name,
             "mode": policy_engine.mode,
             "allowed": policy_engine.allowed_domains,
+            "user_policies": policy_engine.get_user_allowed_domains(),
             "blocked_explicit": policy_engine.blocked_explicit,
             "blocked_categories": policy_engine.blocked_categories,
             "blocked_apps": policy_engine.blocked_apps
@@ -237,6 +256,28 @@ if FASTAPI_AVAILABLE:
         
         success = policy_engine.remove_allowed_domain(domain)
         return JSONResponse({"status": "SUCCESS" if success else "NOT_FOUND", "domain": domain, "allowed": policy_engine.allowed_domains})
+
+    @app.post("/api/admin/policy/user/add")
+    async def admin_add_user_policy_domain(request: Request, _: str = Depends(require_admin)):
+        """Add a site to one participant's local allowlist."""
+        body = await request.json()
+        user = body.get("user", "").strip()
+        domain = body.get("domain", "").strip()
+        if not user or not domain or not policy_engine:
+            raise HTTPException(status_code=400, detail="User and domain are required")
+        success = policy_engine.add_user_allowed_domain(user, domain)
+        return JSONResponse({"status": "SUCCESS" if success else "EXISTS"})
+
+    @app.post("/api/admin/policy/user/remove")
+    async def admin_remove_user_policy_domain(request: Request, _: str = Depends(require_admin)):
+        """Remove a site from one participant's local allowlist."""
+        body = await request.json()
+        user = body.get("user", "").strip()
+        domain = body.get("domain", "").strip()
+        if not user or not domain or not policy_engine:
+            raise HTTPException(status_code=400, detail="User and domain are required")
+        success = policy_engine.remove_user_allowed_domain(user, domain)
+        return JSONResponse({"status": "SUCCESS" if success else "NOT_FOUND"})
 
     @app.post("/api/admin/policy/profile")
     async def admin_switch_profile(request: Request, _: str = Depends(require_admin)):
