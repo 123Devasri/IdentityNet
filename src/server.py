@@ -207,11 +207,12 @@ if FASTAPI_AVAILABLE:
         return JSONResponse(participant, status_code=201)
 
     @app.get("/api/admin/events")
+    @app.get("/api/admin/application-access")
     async def admin_events_api(limit: int = 50, _: str = Depends(require_admin)):
-        """Return recent network events."""
+        """Return recent application access attempts (User Name and Application alone)."""
         if not db_manager:
             return JSONResponse([])
-        return JSONResponse(db_manager.get_recent_network_events(limit=limit))
+        return JSONResponse(db_manager.get_recent_application_access(limit=limit))
 
     @app.get("/api/admin/application-events")
     async def admin_application_events_api(limit: int = 50, _: str = Depends(require_admin)):

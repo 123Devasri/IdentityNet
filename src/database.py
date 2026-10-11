@@ -275,6 +275,83 @@ class DatabaseManager:
             """, (limit,))
             return [dict(row) for row in cursor.fetchall()]
 
+    def get_recent_application_access(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Fetch user application/website access attempts for current active session (User Name and Application alone)."""
+        from signature_engine import SignatureEngine
+        sig_engine = SignatureEngine()
+
+        def resolve_app_name(domain: str) -> str:
+            if not domain:
+                return "Unknown Application"
+            match = sig_engine.match(domain)
+            if match:
+                return match.name
+            d = domain.lower().strip(".")
+            if "github" in d: return "GitHub"
+            if "facebook" in d or "fbcdn" in d: return "Facebook"
+            if "instagram" in d or "cdninstagram" in d: return "Instagram"
+            if "whatsapp" in d: return "WhatsApp"
+            if "youtube" in d or "ytimg" in d or "googlevideo" in d: return "YouTube"
+            if "google" in d or "gstatic" in d or "gvt2" in d or "gvt3" in d: return "Google"
+            if "leetcode" in d: return "LeetCode"
+            if "linkedin" in d or "licdn" in d: return "LinkedIn"
+            if "telegram" in d: return "Telegram"
+            if "discord" in d: return "Discord"
+            if "miui" in d or "xiaomi" in d or "miwifi" in d: return "Xiaomi"
+
+            parts = [p for p in d.split(".") if p not in ("www", "com", "org", "net", "edu", "gov", "co", "io", "in", "us", "uk")]
+            if parts:
+                main_part = parts[-1] if len(parts) > 1 else parts[0]
+                return main_part.capitalize()
+            return domain
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            # Query network events for users during active session
+            cursor.execute("""
+                SELECT 
+                    p.name AS user_name,
+                    ne.destination AS raw_destination,
+                    ne.id AS event_id
+                FROM network_events ne
+                JOIN sessions s ON ne.client_ip = s.ip_address AND s.status = 'ONLINE' AND ne.timestamp >= s.login_time
+                JOIN participants p ON s.participant_id = p.participant_id
+                ORDER BY ne.id DESC LIMIT 300;
+            """)
+            rows = cursor.fetchall()
+
+            if not rows:
+                cursor.execute("""
+                    SELECT 
+                        COALESCE(p.name, ne.participant_id, 'Unauthenticated') AS user_name,
+                        ne.destination AS raw_destination,
+                        ne.id AS event_id
+                    FROM network_events ne
+                    LEFT JOIN participants p ON ne.participant_id = p.participant_id
+                    ORDER BY ne.id DESC LIMIT 300;
+                """)
+                rows = cursor.fetchall()
+
+            results = []
+            seen_pairs = set()
+
+            for row in rows:
+                user_name = row["user_name"] or "Unknown User"
+                dest = row["raw_destination"] or ""
+                app_name = resolve_app_name(dest)
+                
+                pair_key = (user_name, app_name)
+                if pair_key not in seen_pairs:
+                    seen_pairs.add(pair_key)
+                    results.append({
+                        "user_name": user_name,
+                        "application": app_name
+                    })
+                    if len(results) >= limit:
+                        break
+
+            return results
+
     def log_application_event(self, client_ip: str, application: str, category: str,
                                detection_method: str, action: str, destination_ip: str = ""):
         participant = self.get_participant_by_ip(client_ip)
