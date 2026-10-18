@@ -49,6 +49,36 @@
       "name": "X",
       "category": "SocialMedia",
       "domains": ["x.com", "*.x.com", "twitter.com", "*.twitter.com"]
+    },
+    {
+      "name": "GitHub",
+      "category": "Development",
+      "domains": ["github.com", "*.github.com", "githubassets.com", "*.githubassets.com", "githubusercontent.com", "*.githubusercontent.com"]
+    },
+    {
+      "name": "LeetCode",
+      "category": "Education",
+      "domains": ["leetcode.com", "*.leetcode.com"]
+    },
+    {
+      "name": "LinkedIn",
+      "category": "SocialMedia",
+      "domains": ["linkedin.com", "*.linkedin.com", "licdn.com", "*.licdn.com"]
+    },
+    {
+      "name": "Google",
+      "category": "Search",
+      "domains": ["google.com", "*.google.com", "gstatic.com", "*.gstatic.com", "googleapis.com", "*.googleapis.com", "googleusercontent.com", "*.googleusercontent.com", "gvt2.com", "*.gvt2.com", "gvt3.com", "*.gvt3.com"]
+    },
+    {
+      "name": "Python",
+      "category": "Education",
+      "domains": ["python.org", "*.python.org", "pypi.org", "*.pypi.org", "pythonhosted.org", "*.pythonhosted.org"]
+    },
+    {
+      "name": "StackOverflow",
+      "category": "Education",
+      "domains": ["stackoverflow.com", "*.stackoverflow.com", "stackexchange.com", "*.stackexchange.com"]
     }
   ]
 }

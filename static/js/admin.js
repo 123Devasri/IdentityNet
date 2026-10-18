@@ -1,112 +1,103 @@
-// Admin Dashboard Live Control Script
+let participants = [];
+let userPolicies = {};
 
 document.addEventListener("DOMContentLoaded", () => {
     refreshDashboard();
-    // Poll updates every 3 seconds
-    setInterval(refreshDashboard, 3000);
+    document.querySelectorAll(".nav-link").forEach(link => link.addEventListener("click", () => {
+        document.querySelectorAll(".nav-link").forEach(item => item.classList.remove("active"));
+        link.classList.add("active");
+    }));
+    document.getElementById("accessUser").addEventListener("change", renderUserSites);
+    setInterval(refreshDashboard, 10000);
 });
 
+async function getJson(url, options) {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+    return response.json();
+}
+
 async function refreshDashboard() {
-    await fetchStatus();
-    await fetchParticipants();
-    await fetchEvents();
-    await fetchPolicy();
+    try {
+        const [userList, policy] = await Promise.all([
+            getJson("/api/admin/participants"),
+            getJson("/api/admin/policy")
+        ]);
+        participants = userList;
+        userPolicies = policy.user_policies || {};
+        renderParticipants();
+        renderGlobalSites(policy.allowed || []);
+        renderUserOptions();
+    } catch (error) {
+        console.error("Unable to refresh dashboard", error);
+    }
 }
 
-async function fetchStatus() {
-    try {
-        const res = await fetch("/api/admin/status");
-        if (!res.ok) return;
-        const data = await res.json();
-        document.getElementById("statGateway").innerText = data.gateway;
-        document.getElementById("statProfile").innerText = data.policy_profile;
-        document.getElementById("statParticipants").innerText = data.active_participants_count;
-    } catch (e) {}
+function renderParticipants() {
+    document.getElementById("statParticipants").textContent = participants.length;
+    document.getElementById("partBadge").textContent = `${participants.length} user${participants.length === 1 ? "" : "s"}`;
+    const tbody = document.querySelector("#participantsTable tbody");
+    if (!participants.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-state">No connected users.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = participants.map(user => {
+        const blocked = user.unauthorized_access_count || 0;
+        return `<tr>
+            <td><strong>${escapeHtml(user.participant_id)}</strong></td>
+            <td>${escapeHtml(user.name)}</td>
+            <td><span class="status-pill ${user.status === "ONLINE" ? "status-online" : "status-offline"}">${escapeHtml(user.status || "OFFLINE")}</span></td>
+            <td><span class="access-count${blocked ? "" : " clear"}">${blocked ? `${blocked} blocked` : "None detected"}</span></td>
+        </tr>`;
+    }).join("");
 }
 
-async function fetchParticipants() {
+async function addUser(event) {
+    event.preventDefault();
+    const message = document.getElementById("userFormMessage");
+    const payload = {
+        participant_id: document.getElementById("newUserId").value.trim(),
+        name: document.getElementById("newUserName").value.trim(),
+        password: document.getElementById("newUserPassword").value
+    };
+    message.textContent = "";
+    message.className = "form-message";
     try {
-        const res = await fetch("/api/admin/participants");
-        if (!res.ok) return;
-        const list = await res.json();
-        
-        document.getElementById("partBadge").innerText = list.length + " Active";
-        const tbody = document.querySelector("#participantsTable tbody");
-        
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No active participant sessions</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(p => `
-            <tr>
-                <td><strong>${p.participant_id}</strong></td>
-                <td>${p.name}</td>
-                <td><code>${p.ip_address}</code></td>
-                <td><code>${p.mac_address || '00:00:00:00:00:00'}</code></td>
-                <td><span class="badge-allow">${p.status}</span></td>
-                <td>${p.login_time}</td>
-            </tr>
-        `).join("");
-    } catch (e) {}
+        await getJson("/api/admin/participants", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        document.getElementById("addUserForm").reset();
+        message.textContent = "User added.";
+        message.className = "form-message success";
+        await refreshDashboard();
+    } catch (error) {
+        message.textContent = error.message === "Request failed: 400" ? "User ID may already exist or a field is missing." : "Unable to add user.";
+        message.className = "form-message error";
+        console.error("Unable to add user", error);
+    }
 }
 
-async function fetchEvents() {
-    try {
-        const res = await fetch("/api/admin/events?limit=25");
-        if (!res.ok) return;
-        const list = await res.json();
-        const tbody = document.querySelector("#eventsTable tbody");
-
-        if (list.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No network events recorded yet</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = list.map(e => {
-            const badge = e.action === "ALLOWED" 
-                ? '<span class="badge-allow">ALLOWED</span>' 
-                : '<span class="badge-block">BLOCKED</span>';
-            
-            return `
-                <tr>
-                    <td><small>${e.timestamp}</small></td>
-                    <td><code>${e.client_ip}</code></td>
-                    <td><strong>${e.participant_id || 'Unauthenticated'}</strong></td>
-                    <td><code>${e.destination}</code></td>
-                    <td>${badge}</td>
-                    <td><small class="text-muted">${e.reason || ''}</small></td>
-                </tr>
-            `;
-        }).join("");
-    } catch (e) {}
+function renderGlobalSites(sites) {
+    const list = document.getElementById("allowedDomainList");
+    list.innerHTML = sites.length ? sites.map(site => `<li><span>${escapeHtml(site)}</span><button class="remove-site" onclick="removeDomain('${encodeURIComponent(site)}')">Remove</button></li>`).join("") : '<li class="empty-state">No global sites configured.</li>';
 }
 
-async function fetchPolicy() {
-    try {
-        const res = await fetch("/api/admin/policy");
-        if (!res.ok) return;
-        const data = await res.json();
-        
-        const allowedList = data.allowed || [];
-        const ul = document.getElementById("allowedDomainList");
-        
-        ul.innerHTML = allowedList.map(domain => `
-            <li>
-                <span>🌐 ${domain}</span>
-                <button onclick="removeDomain('${domain}')" class="btn btn-danger btn-sm">REMOVE</button>
-            </li>
-        `).join("");
+function renderUserOptions() {
+    const select = document.getElementById("accessUser");
+    const current = select.value;
+    select.innerHTML = '<option value="">Select a user</option>' + participants.map(user => `<option value="${escapeHtml(user.participant_id)}">${escapeHtml(user.participant_id)} — ${escapeHtml(user.name)}</option>`).join("");
+    select.value = current;
+    renderUserSites();
+}
 
-        // Highlight active profile button
-        if (data.active_profile === "contest-2026") {
-            document.getElementById("btnContestProf").className = "btn btn-primary btn-sm";
-            document.getElementById("btnExamProf").className = "btn btn-secondary btn-sm";
-        } else {
-            document.getElementById("btnContestProf").className = "btn btn-secondary btn-sm";
-            document.getElementById("btnExamProf").className = "btn btn-primary btn-sm";
-        }
-    } catch (e) {}
+function renderUserSites() {
+    const userId = document.getElementById("accessUser").value;
+    const sites = userPolicies[userId] || [];
+    document.getElementById("userDomainList").innerHTML = userId
+        ? (sites.length ? sites.map(site => `<li><span>${escapeHtml(site)}</span><button class="remove-site" onclick="removeUserDomain('${encodeURIComponent(userId)}','${encodeURIComponent(site)}')">Remove</button></li>`).join("") : '<li class="empty-state">No local sites configured.</li>')
+        : '<li class="empty-state">Select a user to view local sites.</li>';
 }
 
 async function addDomain(event) {
@@ -114,43 +105,42 @@ async function addDomain(event) {
     const input = document.getElementById("newDomain");
     const domain = input.value.trim();
     if (!domain) return;
-
     try {
-        const res = await fetch("/api/admin/policy/add", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ domain: domain })
-        });
-        if (res.ok) {
-            input.value = "";
-            await fetchPolicy();
-        }
-    } catch (e) {}
+        await getJson("/api/admin/policy/add", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({domain}) });
+        input.value = "";
+        await refreshDashboard();
+    } catch (error) { console.error("Unable to add global site", error); }
 }
 
-async function removeDomain(domain) {
-    if (!confirm(`Are you sure you want to remove '${domain}' from the policy allowlist?`)) return;
+async function removeDomain(encodedDomain) {
+    const domain = decodeURIComponent(encodedDomain);
+    if (!confirm(`Remove ${domain} from the global sites?`)) return;
     try {
-        const res = await fetch("/api/admin/policy/remove", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ domain: domain })
-        });
-        if (res.ok) {
-            await fetchPolicy();
-        }
-    } catch (e) {}
+        await getJson("/api/admin/policy/remove", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({domain}) });
+        await refreshDashboard();
+    } catch (error) { console.error("Unable to remove global site", error); }
 }
 
-async function switchProfile(profileName) {
+async function saveUserAccess(event) {
+    event.preventDefault();
+    const user = document.getElementById("accessUser").value;
+    const domainInput = document.getElementById("userDomain");
+    const domain = domainInput.value.trim();
+    if (!user || !domain) return;
     try {
-        const res = await fetch("/api/admin/policy/profile", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ profile: profileName })
-        });
-        if (res.ok) {
-            await refreshDashboard();
-        }
-    } catch (e) {}
+        await getJson("/api/admin/policy/user/add", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({user, domain}) });
+        domainInput.value = "";
+        await refreshDashboard();
+    } catch (error) { console.error("Unable to save user access", error); }
+}
+
+async function removeUserDomain(encodedUser, encodedDomain) {
+    try {
+        await getJson("/api/admin/policy/user/remove", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({user: decodeURIComponent(encodedUser), domain: decodeURIComponent(encodedDomain)}) });
+        await refreshDashboard();
+    } catch (error) { console.error("Unable to remove user access", error); }
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[character]));
 }
