@@ -1,189 +1,236 @@
-# IdentityNet: Windows Network-Level Access Control & Policy System
+# IdentityNet
 
-**IdentityNet** is a zero-client, Windows-native network access control system and contest/examination gateway server implemented in **C/C++ using Win32 Networking APIs** (`Winsock2`, `IP Helper API`, `Windows Filtering Platform / WFP`).
+> **Zero-client, network-level access control and examination gateway server for Windows and Linux.**
 
-It turns a Windows 10/11 laptop into a secure network gateway servicing standard participant devices (Windows laptops, phones, tablets) connected via **Windows Mobile Hotspot**.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey.svg)]()
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)]()
+[![C Standard](https://img.shields.io/badge/C-C11-orange.svg)]()
 
 ---
 
-## 🌐 1. System Architecture & Network Topology
+## 📌 Overview
+
+**IdentityNet** transforms a standard host laptop or server into a secure, policy-enforcing network gateway for exams, hackathons, and restricted testing environments.
+
+- **Zero-Client Installation**: Participants connect to a Wi-Fi hotspot (e.g. Windows Mobile Hotspot) with no agent, browser extension, or client software installed on their devices.
+- **Default-Deny Security**: All outbound Internet traffic is blocked by default; only explicitly allowed domains and exam workspaces are accessible.
+- **Dual-Engine Architecture**: Includes a high-performance **native C/Win32 gateway** (using WFP & Winsock) and an **application-aware Python engine** (using FastAPI, Scapy, and WinDivert).
+
+---
+
+## 🏗️ Architecture
 
 ```text
-                         INTERNET
-                            │
-                            │ (Upstream Interface: Wi-Fi / Ethernet)
-                    ┌───────┴──────────────────────────────┐
-                    │    Windows Host Laptop (Gateway)     │
-                    │                                      │
-                    │  [ Control Plane - C Win32 Engine ]  │
-                    │   • Embedded C HTTP Server (Port 80) │
-                    │   • Participant Session & MAC Map    │
-                    │   • Admin Control Dashboard UI       │
-                    │   • Policy Engine & Reload Mechanism │
-                    │   • Domain-to-IP Cache Table         │
-                    │                                      │
-                    │  [ Data Plane - Windows Networking ] │
-                    │   • Windows Mobile Hotspot / ICS     │
-                    │   • Winsock UDP/TCP DNS (Port 53)    │
-                    │   • WFP Filters (fwpapi.h)           │
-                    │   • Anti-Bypass DNS Protection       │
-                    │   • Default-Deny Egress Filtering    │
-                    └───────┬──────────────────────────────┘
-                            │ (Hotspot Interface: 192.168.137.1)
-                            │
-                 Windows Mobile Hotspot Network
-                        192.168.137.0/24
-                            │
-          ┌─────────────────┼─────────────────┐
-          │                 │                 │
-   Windows Laptop 1  Windows Laptop 2   Windows Laptop 3
-   192.168.137.10    192.168.137.11    192.168.137.12
-   Participant P001  Participant P002  Participant P003
+                     INTERNET (Upstream Wi-Fi / Ethernet)
+                                      ▲
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              │             IDENTITYNET GATEWAY HOST          │
+              │                                               │
+              │  [ Control Plane ]                            │
+              │   • Admin Control Dashboard UI                │
+              │   • Participant Portal & Auth (/login)        │
+              │   • Policy Engine (config/policy.json)        │
+              │   • SQLite Audit & Event Logging              │
+              │                                               │
+              │  [ Data Plane ]                               │
+              │   • DNS Policy Filter (Port 53 UDP/TCP)       │
+              │   • Anti-Bypass DNS Protection (Blocks 8.8.8.8)│
+              │   • TLS SNI Application Classifier (V2)       │
+              │   • WFP / WinDivert Dynamic Packet Filter     │
+              └───────────────────────┬───────────────────────┘
+                                      │
+              Hotspot Subnet (192.168.137.0/24 / Gateway: .1)
+                                      │
+                 ┌────────────────────┼────────────────────┐
+                 ▼                    ▼                    ▼
+          Participant 1        Participant 2        Participant 3
+         (192.168.137.10)     (192.168.137.11)     (192.168.137.12)
 ```
 
 ---
 
-## ⚡ 2. Separation of Control Plane & Data Plane
+## ✨ Key Features
 
-IdentityNet cleanly separates the **Control Plane** (Web Server, Auth, UI, Policy Editor) from the **Data Plane** (Windows Mobile Hotspot NAT/ICS, Winsock DNS Filter, WFP Filtering):
-
-### 🧠 Control Plane (User-Mode C)
-- **APIs**: Winsock2 C Sockets + Win32 Threads + IP Helper API
-- **Responsibilities**:
-  - Serves participant login portal (`http://contest.identitynet.local/login`).
-  - Tracks active sessions (Participant ID, IP address, MAC address via `SendARP()`, login time).
-  - Hosts the contest workspace (`/contest`, `/questions`, `/submit`).
-  - Serves the Admin Dashboard (`/admin`).
-  - Manages domain allowlist and Domain-to-IP Cache Table.
-
-### 🛡️ Data Plane (Windows Network Stack & WFP)
-- **APIs**: Windows Filtering Platform (`fwpuclnt.dll` / `fwpapi.h`), Winsock UDP/TCP 53.
-- **Responsibilities**:
-  - **Anti-Bypass DNS Protection**: Adds WFP filter on layer `FWPM_LAYER_ALE_AUTH_CONNECT_V4` to block/redirect client DNS queries (UDP port 53) to external DNS servers (`8.8.8.8`, `1.1.1.1`).
-  - **DNS Policy Filtering**: Resolves `contest.identitynet.local` -> `192.168.137.1`. For allowed external domains (`github.com`, `docs.python.org`), performs upstream DNS resolution and caches destination IPs. For unauthorized domains (`google.com`, `chatgpt.com`), returns `0.0.0.0` and logs `BLOCK` events.
-  - **WFP Destination IP Permitting**: Adds dynamic WFP permit filters (`FWPM_ACTION_PERMIT`) for IP destinations associated with allowed domains.
+- **🛡️ Strict Default-Deny Allowlisting**: Only specified resources (e.g. contest portal, official documentation) resolve; all other destinations return `0.0.0.0` or get dropped.
+- **📱 Application-Aware Classification (V2)**: Identifies and restricts desktop & mobile applications (Discord, WhatsApp, Telegram, Spotify, social media) using DNS and TLS ClientHello SNI inspection without MITM decryption.
+- **🔒 Anti-Bypass DNS Enforcement**: Blocks or redirects rogue outbound DNS requests (e.g. queries directed to `8.8.8.8` or `1.1.1.1`) to prevent bypass attempts.
+- **👤 Device & Session Tracking**: Discovers connected participant MAC addresses via ARP (`SendARP`) and correlates active IP leases with participant authentication.
+- **📊 Real-Time Admin Dashboard**: Live web interface to view connected devices, monitor real-time traffic events, manage participants, and update policies on the fly.
+- **🧪 Multi-Platform Deployment**: Runs natively on Windows 10/11 using WFP/WinDivert, or on Linux using nftables/iptables.
 
 ---
 
-## 🔒 3. Default-Deny Allowlist Policy Model
+## 📁 Repository Structure
 
-IdentityNet enforces a strict **Default-Deny Model**:
-
-```json
-{
-  "profile": "contest-2026",
-  "default_action": "DENY",
-  "allowed_domains": [
-    "contest.identitynet.local",
-    "exam.identitynet.local",
-    "github.com",
-    "*.github.com",
-    "docs.python.org"
-  ]
-}
+```text
+IdentityNet/
+├── config/                 # Policy, application signatures, and user profiles
+│   ├── application_signatures.json  # Wildcard signatures for app classification
+│   ├── policy.json                  # Active security profile & allowed domains
+│   └── users.json                   # Participant accounts and role mappings
+├── docs/                   # Detailed documentation and reference guides
+│   ├── SETUP_GUIDE.md               # Step-by-step Windows hotspot & hardware setup
+│   ├── V2_MIGRATION_GUIDE.md        # V1 to V2 application-filtering migration
+│   └── NETWORKING_CONCEPTS.md       # 21 networking concepts demonstrated
+├── drivers/                # WinDivert 64-bit kernel driver and user-mode DLL
+├── src/                    # Gateway source code
+│   ├── main.py             # Python gateway entry point
+│   ├── server.py           # FastAPI web portal and admin REST endpoints
+│   ├── app_classifier.py   # Multi-signal application classification engine
+│   ├── policy_engine.py    # Allowlist/blocklist policy evaluation
+│   ├── dns_server.py       # Custom DNS server with policy enforcement
+│   ├── firewall_enforcer.py# Dynamic packet dropping via WinDivert / nftables
+│   ├── database.py         # SQLite database models and audit storage
+│   ├── main.c              # Native C gateway entry point
+│   ├── dns_server.c        # Native Winsock DNS server
+│   ├── contest_server.c    # Native embedded C HTTP server
+│   └── network.c           # Win32 network adapter discovery (IP Helper API)
+├── templates/              # Jinja2 HTML templates (Admin, Login, Contest UI)
+├── static/                 # CSS stylesheets and client JavaScript
+├── web/                    # Static assets served by native C server
+├── wfp/                    # Windows Filtering Platform (WFP) C implementation
+├── test/                   # Automated test suite and client simulators
+│   ├── run_all_tests.py    # Test runner for core policy scenarios
+│   ├── test_gateway.py     # Gateway integration unit tests
+│   ├── test_dns.py         # DNS resolution unit tests
+│   └── test_v2.py          # Application classification unit tests
+├── build.bat               # Compiles C gateway using MinGW GCC
+├── run.bat                 # Launches Python gateway in local test mode
+├── setup.sh                # Linux installation script
+├── start.sh                # Linux launch script
+├── CMakeLists.txt          # CMake build configuration for C gateway
+├── requirements.txt        # Python package dependencies
+├── LICENSE                 # MIT License
+└── README.md
 ```
 
-### Policy Decision Matrix:
+---
 
-| Destination Requested | Gateway Verdict | Resulting Network Action |
-|:---|:---:|:---|
-| `contest.identitynet.local` | **ALLOWED** | Resolves to Gateway IP `192.168.137.1`. Served locally by C HTTP server. |
-| `github.com` | **ALLOWED** | Upstream DNS resolved. WFP permits destination IP. Traffic forwarded to Internet. |
-| `docs.python.org` | **ALLOWED** | Upstream DNS resolved. WFP permits destination IP. Traffic forwarded to Internet. |
-| `google.com` | **BLOCKED** | DNS returns `0.0.0.0`. WFP drops outbound connection attempts. Logged in Admin Dashboard. |
-| `chatgpt.com` | **BLOCKED** | DNS returns `0.0.0.0`. WFP drops connection. Event logged. |
+## 🚀 Quick Start
+
+### Option 1: Python Gateway (Application-Aware V2)
+
+Recommended for testing, development, and application classification.
+
+#### 1. Setup Environment
+```bash
+# Clone the repository
+git clone https://github.com/M-DhanyaShree/IdentityNet.git
+cd IdentityNet
+
+# Create and activate virtual environment
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+#### 2. Run in Local Dry-Run Mode
+Test the web interface, policy engine, and database locally without modifying system firewall rules:
+```bash
+# Windows
+run.bat
+# or directly:
+python src/main.py --dry-run --gateway-ip 127.0.0.1 --port 8080
+```
+
+#### 3. Access the Portals
+- **Participant Login**: `http://127.0.0.1:8080/login`
+- **Admin Dashboard**: `http://127.0.0.1:8080/admin` (Default: `admin` / `admin123`)
 
 ---
 
-## 🔬 4. Computer Networking Concepts Demonstrated
+### Option 2: Native Windows C Gateway (WFP Native V1)
 
-IdentityNet practically demonstrates 21 core networking concepts:
+For zero-overhead native execution directly on Windows using Winsock2 and the Windows Filtering Platform:
 
-| # | Networking Concept | IdentityNet C Implementation | Demonstration Method |
-|:---:|:---|:---|:---|
-| 1 | **Wi-Fi / Hotspot** | Windows Mobile Hotspot adapter (`192.168.137.1`). | `GetAdaptersAddresses()` |
-| 2 | **IP Addressing** | Hotspot IPv4 addressing (`192.168.137.0/24`). | `ipconfig /all` |
-| 3 | **DHCP** | Windows ICS / Mobile Hotspot DHCP server. | `ipconfig /renew` |
-| 4 | **MAC Addresses** | Client MAC discovery using IP Helper API (`SendARP()`). | `clients.c` / Admin Dashboard |
-| 5 | **ARP (Layer 2)** | Gateway MAC resolution for hotspot clients. | `arp -a` |
-| 6 | **Routing & Gateway** | Windows IP routing and default gateway (`192.168.137.1`). | `route print` / `Get-NetRoute` |
-| 7 | **NAT / ICS** | Windows Internet Connection Sharing masquerading. | `netsh wlan show hostednetwork` |
-| 8 | **DNS Filter** | C Winsock UDP/TCP port 53 resolver & policy filter. | `nslookup contest.identitynet.local` |
-| 9 | **UDP (Layer 4)** | Connectionless DNS packet handling on port 53. | `dns_server.c` |
-| 10 | **TCP (Layer 4)** | Reliable Winsock TCP sockets for C HTTP contest server. | `contest_server.c` / `netstat -ano` |
-| 11 | **Firewall (WFP)** | Windows Filtering Platform (`fwpuclnt.dll` / `fwpapi.h`). | `wfp_manager.c` |
-| 12 | **Stateful Filtering** | WFP connection-aware layer `FWPM_LAYER_ALE_AUTH_CONNECT_V4`. | WFP filter rules |
-| 13 | **Anti-Bypass DNS** | WFP block filter for external port 53 (`8.8.8.8`). | `nslookup google.com 8.8.8.8` |
-| 14 | **Application Layer** | Embedded C HTTP server handling contest application. | `http://192.168.137.1/login` |
-| 15 | **HTTP** | C Web server serving HTML/CSS/JS frontend files. | `contest_server.c` |
-| 16 | **HTTPS Limitations** | DNS policy + WFP IP filter enforcing default-deny without MITM. | Documentation & WFP log |
-| 17 | **Authentication** | Participant ID & password authentication (`clients.c`). | `/login` form |
-| 18 | **Logging** | Thread-safe C event log file (`logs/traffic.log`). | `logger.c` |
-| 19 | **Allowlist Policy** | Domain pattern matcher (`policy.c`). | `config/policy.json` |
-| 20 | **Client-Server Model** | Win32 socket multi-threaded client request processing. | `contest_server.c` |
-| 21 | **Network Discovery** | Dynamic interface discovery via `GetAdaptersAddresses()`. | `network.c` |
-
----
-
-## 🛠️ 5. Build & Compilation Guide
-
-### Requirements:
-- **OS**: Windows 10 / Windows 11
-- **Compiler**: MinGW GCC 14+ (`gcc.exe`) or MSVC (`cl.exe` / Visual Studio)
-
-### Build with MinGW GCC:
+#### 1. Compile with MinGW GCC
 ```cmd
 build.bat
 ```
+This produces `bin\IdentityNet.exe`.
 
-### Run Binary:
+#### 2. Run as Administrator
+Open **Command Prompt as Administrator** and launch:
 ```cmd
 bin\IdentityNet.exe 80
 ```
 
+> For complete instructions on configuring the Windows Mobile Hotspot adapter and connecting physical participant devices, refer to [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md).
+
 ---
 
-## V2 Application-Aware Filtering
+## ⚙️ Configuration
 
-Version 2 preserves the DNS allowlist and adds gateway-side application classification for WhatsApp, Telegram, Discord, Instagram, Facebook, Messenger, Snapchat, Spotify, YouTube, and X/Twitter.
+Security rules are managed in `config/`:
 
-The V2 pipeline is:
-
-```text
-DNS query/response -> signature match -> DNS-IP cache
-TLS ClientHello SNI -> signature match -> policy decision
-Encrypted packet -> cached destination IP -> policy decision
-Blocked decision -> WinDivert packet drop (Windows) or Linux firewall rule
-```
-
-No participant software, browser extension, TLS decryption, or MITM certificate is used. TLS SNI is inspected only when it is visible in the ClientHello. DNS-IP correlation is used after encryption begins.
-
-Application signatures are stored in [config/application_signatures.json](config/application_signatures.json). Application policy is stored alongside the existing domain policy in [config/policy.json](config/policy.json):
-
+### 1. `config/policy.json`
+Defines active profiles, allowed domains, and blocked categories:
 ```json
 {
+  "active_profile": "contest-2026",
   "blocked_categories": ["Messaging", "SocialMedia", "Streaming"],
-  "blocked_apps": []
+  "blocked_apps": ["Discord"],
+  "profiles": {
+    "contest-2026": {
+      "allowed": [
+        "contest.identitynet.local",
+        "github.com",
+        "*.github.com",
+        "docs.python.org"
+      ]
+    }
+  }
 }
 ```
 
-On Windows, V2 enforcement uses WinDivert at the network layer. Install the WinDivert driver, install Npcap for the existing Scapy observation path, install the Python requirements, run PowerShell as Administrator, and start the gateway with:
-
-```powershell
-python src\main.py --gateway-ip 192.168.137.1 --subnet 192.168.137.0/24 --port 8080 --enable-app-filtering --capture-interface "Wi-Fi"
+### 2. `config/application_signatures.json`
+Maps domain patterns to application identities (e.g. WhatsApp, Discord, YouTube, Telegram):
+```json
+{
+  "Discord": {
+    "category": "Messaging",
+    "domains": ["discord.com", "*.discord.com", "discord.gg", "*.discordapp.com"]
+  }
+}
 ```
 
-When this mode is enabled on Windows, the gateway fails to start if `pydivert` or the WinDivert driver cannot be opened. A blocked packet is received by WinDivert and is intentionally not reinjected; an allowed packet is reinjected unchanged.
+---
 
-The V2 modules are:
+## 🧪 Testing
 
-- `src/app_classifier.py`: combines DNS, TLS SNI, and cached-IP evidence.
-- `src/tls_sni_inspector.py`: parses TLS ClientHello SNI without decrypting TLS.
-- `src/dns_cache.py`: stores domain-to-IP-to-application relationships with expiry.
-- `src/signature_engine.py`: loads wildcard application signatures.
-- `src/firewall_enforcer.py`: applies immediate platform-specific destination blocks.
-- `src/policy_engine.py`: evaluates blocked applications and categories.
+IdentityNet includes an automated test suite verifying policy evaluation, domain allowlisting, and application classification:
 
-Application events are stored in SQLite and exposed through `/api/admin/application-events`. Detection includes the method (`DNS_QUERY`, `DNS_RESPONSE`, `TLS_SNI`, or `DNS_IP_CACHE`), participant IP, application, category, and action.
+```bash
+# Run the core 4-scenario validation suite
+python test/run_all_tests.py
 
-V2 is a network metadata filter, not a universal application identification system. QUIC-only traffic, encrypted ClientHello/SNI, DNS-over-HTTPS, DNS-over-TLS, hard-coded IPs without a DNS observation, CDNs shared by multiple services, and rapidly changing service domains can reduce classification accuracy. WinDivert provides real packet dropping for traffic that is classified, but it cannot classify traffic whose application identity is not visible through the configured signals.
+# Run gateway integration tests
+python test/test_gateway.py
+
+# Run DNS filtering tests
+python test/test_dns.py
+
+# Run V2 application classifier tests
+python test/test_v2.py
+```
+
+---
+
+## 📚 Further Reading
+
+- [Complete Hardware & Hotspot Setup Guide](docs/SETUP_GUIDE.md)
+- [V1 to V2 Application-Aware Migration Guide](docs/V2_MIGRATION_GUIDE.md)
+- [21 Networking Concepts Demonstrated](docs/NETWORKING_CONCEPTS.md)
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
