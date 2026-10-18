@@ -18,11 +18,20 @@ class TestIdentityNetGateway(unittest.TestCase):
     def setUp(self):
         self.test_db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "test_identitynet.db"))
         self.db = DatabaseManager(db_path=self.test_db_path)
+        with self.db.get_connection() as conn:
+            conn.execute("DELETE FROM participants WHERE participant_id = 'P099';")
+            conn.commit()
         
         self.config_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../config"))
         self.policy = PolicyEngine(policy_file=os.path.join(self.config_dir, "policy.json"))
 
     def tearDown(self):
+        try:
+            with self.db.get_connection() as conn:
+                conn.execute("DELETE FROM participants WHERE participant_id = 'P099';")
+                conn.commit()
+        except Exception:
+            pass
         if os.path.exists(self.test_db_path):
             try:
                 os.remove(self.test_db_path)

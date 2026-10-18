@@ -1,0 +1,66 @@
+# =============================================================================
+# IdentityNet - .gitignore
+# =============================================================================
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# C / C++ Compilation Artifacts
+bin/*.exe
+bin/*.pdb
+bin/*.ilk
+bin/*.dll
+!bin/.gitkeep
+*.o
+*.obj
+*.a
+*.lib
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Runtime Databases
+database/*.db
+database/*.sqlite*
+test/*.db
+test/*.sqlite*
+!database/.gitkeep
+
+# Runtime Logs
+logs/*.log
+*.log
+!logs/.gitkeep
+
+# Environments & Secrets
+.env
+.env.local
+*.pem
+*.key
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*.suo
+*.user
+
+# OS Metadata
+Thumbs.db
+Desktop.ini
+.DS_Store
